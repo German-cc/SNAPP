@@ -423,19 +423,76 @@
         text-align: center !important;
     }
 
-    .search-category-card:active {
-        transform: scale(0.95) !important;
-    }
-
     .search-category-icon {
         font-size: 2rem !important;
         color: var(--accent) !important;
+        transition: color 0.25s ease !important;
     }
 
     .search-category-name {
         font-size: 0.9rem !important;
         color: var(--text-primary) !important;
         font-weight: 500 !important;
+        transition: all 0.25s ease !important;
+    }
+
+    .search-category-card:hover {
+        transform: translateY(-2px) !important;
+        border-color: var(--accent) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .search-category-card.active {
+        background: var(--accent) !important;
+        border-color: var(--accent) !important;
+        box-shadow: 0 4px 16px rgba(155, 136, 196, 0.4) !important;
+    }
+
+    .search-category-card.active .search-category-icon {
+        color: var(--color-white) !important;
+    }
+
+    .search-category-card.active .search-category-name {
+        color: var(--color-white) !important;
+        font-weight: 600 !important;
+    }
+
+    .search-category-card:active {
+        transform: scale(0.95) !important;
+    }
+
+    /* Edit Profile Modal Styles */
+    .profile-dropzone.dragover {
+        border-color: var(--accent) !important;
+        background: var(--glass-effect-light) !important;
+        transform: scale(1.02);
+    }
+
+    .profile-dropzone i {
+        transition: all 0.3s ease;
+    }
+
+    .profile-dropzone.dragover i {
+        transform: scale(1.2);
+        color: var(--accent);
+    }
+
+    .current-avatar-preview.has-image {
+        border-color: var(--success-color);
+    }
+
+    #editProfileAvatarImage.show {
+        display: block !important;
+    }
+
+    #editProfileAvatarIcon.hide {
+        display: none !important;
+    }
+
+    .btn-remove-photo.show {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     /* Game results in search */
@@ -556,6 +613,58 @@
 .form-group textarea:valid,
 .form-group select:valid {
     border-color: #2ed573;
+}
+.generic-avatars-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+}
+
+.generic-avatar-option {
+    position: relative;
+    aspect-ratio: 1;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.generic-avatar-option:hover {
+    transform: scale(1.05);
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(130, 102, 90, 0.3);
+}
+
+.generic-avatar-option.selected {
+    border-color: var(--success-color);
+    border-width: 3px;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
+.generic-avatar-option img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.generic-avatar-option .selected-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: var(--success-color);
+    color: white;
+    border-radius: 50%;
+    padding: 0.2rem;
+    font-size: 0.7rem;
+    border: 2px solid var(--bg-card);
+}
+
+@media (max-width: 768px) {
+    .generic-avatars-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.5rem;
+    }
 }
 </style>
   <script>tailwind.config = {theme: {extend: {fontFamily: {'poppins': ['Poppins', 'sans-serif'],},transitionTimingFunction: {'bounce-custom': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)','custom': 'cubic-bezier(0.4, 0, 0.2, 1)',}}}}</script>
@@ -971,7 +1080,7 @@
     </div>
   </div>
   
-  <div class="auth-modal hidden fixed inset-0 bg-[var(--overlay-darker-opacity)] z-[3000] items-center justify-center backdrop-blur-[5px] transition-opacity duration-300 ease-out [&.show]:flex [&.show]:animate-[fadeIn_0.3s_ease] max-[768px]:p-0" id="authModal">
+  <div class="auth-modal hidden fixed inset-0 bg-[var(--overlay)] z-[3000] items-center justify-center backdrop-blur-[5px] transition-opacity duration-300 ease-out [&.show]:flex [&.show]:animate-[fadeIn_0.3s_ease] max-[768px]:p-0" id="authModal">
     <div class="auth-container bg-[image:var(--gradient-notifications)] p-[2rem] rounded-[20px] w-full max-w-[450px] shadow-[var(--shadow-xlarge)] relative backdrop-blur-[15px] border-[var(--border-width-thick)] border-[var(--border-color)] overflow-hidden max-[768px]:max-w-none max-[768px]:h-screen max-[768px]:rounded-none max-[768px]:border-0 max-[768px]:overflow-y-auto">
       <button class="close-auth absolute top-[1rem] right-[1rem] bg-transparent border-none text-[1.5rem] cursor-pointer text-[var(--text-muted)] transition-colors duration-200 hover:text-[var(--accent)] max-[768px]:bg-[var(--glass-effect)] max-[768px]:rounded-full max-[768px]:w-[44px] max-[768px]:h-[44px] max-[768px]:flex max-[768px]:items-center max-[768px]:justify-center max-[768px]:border max-[768px]:border-[var(--border-color)] max-[768px]:z-10" id="closeAuth">&times;</button>
       <h2 class="mb-[1.5rem] text-[var(--accent)] text-center text-[1.8rem] max-[768px]:sticky max-[768px]:top-0 max-[768px]:bg-[var(--bg-header)] max-[768px]:backdrop-blur-[10px] max-[768px]:-mx-[2rem] max-[768px]:px-[2rem] max-[768px]:py-[1rem] max-[768px]:mb-[1rem] max-[768px]:z-5 max-[768px]:border-b max-[768px]:border-[var(--border-color)]">Autenticación</h2>
@@ -1022,7 +1131,7 @@
     </div>
   </div>
   
-  <div class="auth-modal hidden fixed inset-0 bg-[var(--overlay-darker-opacity)] z-[3000] items-center justify-center backdrop-blur-[5px] transition-opacity duration-300 ease-out [&.show]:flex [&.show]:animate-[fadeIn_0.3s_ease] max-[768px]:p-0" id="changePasswordModal">
+  <div class="auth-modal hidden fixed inset-0 bg-[var(--overlay)] z-[3000] items-center justify-center backdrop-blur-[5px] transition-opacity duration-300 ease-out [&.show]:flex [&.show]:animate-[fadeIn_0.3s_ease] max-[768px]:p-0" id="changePasswordModal">
     <div class="auth-container bg-[image:var(--gradient-notifications)] p-[2rem] rounded-[20px] w-full max-w-[450px] shadow-[var(--shadow-xlarge)] relative backdrop-blur-[15px] border-[var(--border-width-thick)] border-[var(--border-color)] overflow-hidden max-[768px]:max-w-none max-[768px]:h-screen max-[768px]:rounded-none max-[768px]:border-0 max-[768px]:overflow-y-auto">
       <button class="close-auth absolute top-[1rem] right-[1rem] bg-transparent border-none text-[1.5rem] cursor-pointer text-[var(--text-muted)] transition-colors duration-200 hover:text-[var(--accent)] max-[768px]:bg-[var(--glass-effect)] max-[768px]:rounded-full max-[768px]:w-[44px] max-[768px]:h-[44px] max-[768px]:flex max-[768px]:items-center max-[768px]:justify-center max-[768px]:border max-[768px]:border-[var(--border-color)] max-[768px]:z-10" id="closeChangePassword">&times;</button>
       <h2 class="mb-[1.5rem] text-[var(--accent)] text-center text-[1.8rem] max-[768px]:sticky max-[768px]:top-0 max-[768px]:bg-[var(--bg-header)] max-[768px]:backdrop-blur-[10px] max-[768px]:-mx-[2rem] max-[768px]:px-[2rem] max-[768px]:py-[1rem] max-[768px]:mb-[1rem] max-[768px]:z-5 max-[768px]:border-b max-[768px]:border-[var(--border-color)]">Cambiar contraseña</h2>
@@ -1045,6 +1154,82 @@
       </form>
     </div>
   </div>
+
+  <!-- Edit Profile Modal -->
+  <div class="auth-modal hidden fixed inset-0 bg-[var(--overlay)] z-[3000] items-center justify-center backdrop-blur-[5px] transition-opacity duration-300 ease-out [&.show]:flex [&.show]:animate-[fadeIn_0.3s_ease] max-[768px]:p-0" id="editProfileModal">
+    <div class="auth-container bg-[image:var(--gradient-notifications)] p-[2rem] rounded-[20px] w-full max-w-[500px] shadow-[var(--shadow-xlarge)] relative backdrop-blur-[15px] border-[var(--border-width-thick)] border-[var(--border-color)] overflow-hidden max-[768px]:max-w-none max-[768px]:h-screen max-[768px]:rounded-none max-[768px]:border-0 max-[768px]:overflow-y-auto">
+      <button class="close-auth absolute top-[1rem] right-[1rem] bg-transparent border-none text-[1.5rem] cursor-pointer text-[var(--text-muted)] transition-colors duration-200 hover:text-[var(--accent)] max-[768px]:bg-[var(--glass-effect)] max-[768px]:rounded-full max-[768px]:w-[44px] max-[768px]:h-[44px] max-[768px]:flex max-[768px]:items-center max-[768px]:justify-center max-[768px]:border max-[768px]:border-[var(--border-color)] max-[768px]:z-10" id="closeEditProfile">&times;</button>
+      
+      <h2 class="mb-[1.5rem] text-[var(--accent)] text-center text-[1.8rem] max-[768px]:sticky max-[768px]:top-0 max-[768px]:bg-[var(--bg-header)] max-[768px]:backdrop-blur-[10px] max-[768px]:-mx-[2rem] max-[768px]:px-[2rem] max-[768px]:py-[1rem] max-[768px]:mb-[1rem] max-[768px]:z-5 max-[768px]:border-b max-[768px]:border-[var(--border-color)]">
+        <i class="fas fa-user-edit"></i> Editar Perfil
+      </h2>
+      
+    <form id="editProfileForm">
+      <!-- Profile Picture Upload -->
+      <div class="form-group mb-[2rem]">
+        <label class="block mb-[0.75rem] font-medium text-[var(--text-primary)] text-center">Foto de perfil</label>
+        
+        <div class="profile-upload-container flex flex-col items-center gap-[1rem]">
+          <!-- Current Avatar Preview -->
+          <div class="current-avatar-preview w-[120px] h-[120px] rounded-full bg-[image:var(--gradient-avatar)] flex items-center justify-center text-[var(--accent)] text-[2.5rem] shadow-[var(--shadow-large)] border-[3px] border-[var(--accent)] transition-all duration-300 overflow-hidden hover:scale-105 cursor-pointer" id="editProfileAvatarPreview">
+            <i class="fas fa-user" id="editProfileAvatarIcon"></i>
+            <img src="" alt="Avatar" class="w-full h-full object-cover hidden" id="editProfileAvatarImage">
+          </div>
+          
+          <!-- Drag & Drop Zone -->
+          <div class="profile-dropzone w-full p-[1.5rem] border-[2px] border-dashed border-[var(--border-color)] rounded-[12px] text-center cursor-pointer transition-all duration-300 hover:border-[var(--accent)] hover:bg-[var(--glass-effect-light)] bg-[var(--bg-card)]" id="profileDropzone">
+            <i class="fas fa-cloud-upload-alt text-[2.5rem] text-[var(--accent)] mb-[0.5rem]"></i>
+            <p class="text-[var(--text-secondary)] mb-[0.5rem] text-[0.95rem]">
+              <strong class="text-[var(--accent)]">Click para seleccionar</strong> o arrastra una imagen aquí
+            </p>
+            <small class="text-[var(--text-muted)] text-[0.85rem]">PNG, JPG, GIF (máx. 5MB)</small>
+            <input type="file" id="profileImageInput" accept="image/*" class="hidden">
+          </div>
+          
+          <!-- Remove Photo Button -->
+          <button type="button" class="btn-remove-photo hidden px-[1rem] py-[0.5rem] bg-transparent border border-[var(--error-color)] text-[var(--error-color)] rounded-[8px] text-[0.9rem] cursor-pointer transition-all duration-200 hover:bg-[var(--error-color)] hover:text-white" id="removeProfilePhoto">
+            <i class="fas fa-trash-alt"></i> Eliminar foto
+          </button>
+        </div>
+        
+        <!-- Galería de avatares genéricos -->
+        <div class="generic-avatars-section" style="margin-top: 1.5rem;">
+          <h4 style="margin-bottom: 0.75rem; color: var(--text-primary); font-size: 0.9rem; text-align: center; font-weight: 500;">
+            O elige un avatar predefinido:
+          </h4>
+          <div id="genericAvatarsGrid" class="generic-avatars-grid"></div>
+        </div>
+      </div>
+      
+      <!-- Name Input -->
+      <div class="form-group mb-[1.5rem]">
+        <label for="editProfileName" class="flex items-center gap-[0.5rem] mb-[0.5rem] font-medium text-[var(--text-primary)]">
+          <i class="fas fa-user"></i> Nombre
+        </label>
+        <input type="text" id="editProfileName" required class="w-full p-[0.75rem] rounded-[var(--border-radius)] border border-[var(--text-muted)] bg-[var(--bg-card)] text-[var(--text-primary)] font-poppins transition-all duration-[0.25s] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_var(--accent)]" placeholder="Tu nombre">
+      </div>
+      
+      <!-- Email Input -->
+      <div class="form-group mb-[1.5rem]">
+        <label for="editProfileEmail" class="flex items-center gap-[0.5rem] mb-[0.5rem] font-medium text-[var(--text-primary)]">
+          <i class="fas fa-envelope"></i> Correo electrónico
+        </label>
+        <input type="email" id="editProfileEmail" required class="w-full p-[0.75rem] rounded-[var(--border-radius)] border border-[var(--text-muted)] bg-[var(--bg-card)] text-[var(--text-primary)] font-poppins transition-all duration-[0.25s] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_var(--accent)]" placeholder="tu@email.com">
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="form-actions flex justify-end gap-[1rem] mt-[2rem]">
+        <button type="button" class="btn btn-secondary px-[1.5rem] py-[0.75rem] rounded-[var(--border-radius)] border border-[var(--text-muted)] font-medium cursor-pointer transition-all duration-[0.25s] inline-flex items-center gap-[0.5rem] font-poppins bg-transparent text-[var(--text-primary)] hover:bg-[var(--glass-effect)] hover:-translate-y-[2px]" id="cancelEditProfile">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary px-[1.5rem] py-[0.75rem] rounded-[var(--border-radius)] border-none font-medium cursor-pointer transition-all duration-[0.25s] inline-flex items-center gap-[0.5rem] font-poppins bg-[image:var(--gradient-accent)] text-[var(--color-white)] hover:opacity-90 hover:-translate-y-[2px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
+          <i class="fas fa-save"></i> Guardar cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
   <script src="static/js/script.js"></script>
   </body>
   </html>

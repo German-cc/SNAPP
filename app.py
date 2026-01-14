@@ -634,6 +634,55 @@ def api_update_profile():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/auth/update-profile', methods=['POST'])
+@login_required
+def api_update_user_profile():
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        session_user = session['current_user']
+        user_email = session_user['email']
+        users = load_data(USERS_FILE, {})
+        
+        if user_email not in users:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+        
+        # Update name
+        if 'name' in data and data['name'].strip():
+            new_name = data['name'].strip()
+            users[user_email]['name'] = new_name
+            session_user['name'] = new_name
+            session['current_user'] = session_user
+        
+        # Update avatar
+        if 'avatar' in data:
+            if 'profile' not in users[user_email]:
+                users[user_email]['profile'] = {}
+            users[user_email]['profile']['avatar'] = data['avatar']
+        
+        # Save changes
+        if save_data(USERS_FILE, users):
+            updated_user_data = {
+                'name': users[user_email]['name'],
+                'email': user_email,
+                'role': users[user_email].get('role', 'user'),
+                'created_at': users[user_email].get('created_at'),
+                'profile': users[user_email].get('profile', {})
+            }
+            
+            return jsonify({
+                'success': True,
+                'user': updated_user_data,
+                'message': 'Perfil actualizado correctamente'
+            })
+        
+        return jsonify({'error': 'Error al guardar cambios'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @app.route('/api/games/<int:game_id>', methods=['GET'])
 def api_get_game_by_id(game_id):
     try:

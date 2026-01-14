@@ -739,35 +739,6 @@ function renderFilteredGames() {
         
         const imageUrl = game.thumb || `https://via.placeholder.com/300x300/cccccc/333333?text=${encodeURIComponent(game.title.substring(0, 1))}`;
         
-        // Generar estrellas de rating
-        const rating = game.rating || 0;
-        const fullStars = Math.floor(rating);
-        const hasHalfStar = rating % 1 >= 0.5;
-        let starsHtml = '';
-        
-        if (rating > 0) {
-            starsHtml = '<div class="game-rating absolute top-[8px] left-[8px] bg-[rgba(0,0,0,0.7)] backdrop-blur-[8px] px-[8px] py-[4px] rounded-[8px] flex items-center gap-[4px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">';
-            
-            // Estrellas llenas
-            for (let i = 0; i < fullStars; i++) {
-                starsHtml += '<i class="fas fa-star text-[var(--star-color)] text-[0.85rem]"></i>';
-            }
-            
-            // Media estrella
-            if (hasHalfStar) {
-                starsHtml += '<i class="fas fa-star-half-alt text-[var(--star-color)] text-[0.85rem]"></i>';
-            }
-            
-            // Estrellas vacías
-            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-            for (let i = 0; i < emptyStars; i++) {
-                starsHtml += '<i class="far fa-star text-[var(--star-color)] text-[0.85rem] opacity-50"></i>';
-            }
-            
-            starsHtml += '<span class="text-white text-[0.75rem] font-semibold ml-[2px]">' + rating.toFixed(1) + '</span>';
-            starsHtml += '</div>';
-        }
-        
         // Plantilla actualizada con clases de Tailwind completas
         const gameCard = `
             <div class="game-card ${gridSpan} bg-[image:var(--gradient-card)] rounded-[12px] shadow-[var(--shadow-large)] overflow-visible cursor-pointer transition-all duration-300 ease-out relative block border-[2px] border-transparent hover:-translate-y-[8px] hover:scale-[1.02] hover:shadow-[0_15px_30px_rgba(130,102,90,0.3)] hover:border-[var(--accent)] group [will-change:transform]" 
@@ -778,13 +749,6 @@ function renderFilteredGames() {
                 <div class="rounded-[12px] overflow-hidden w-full h-full">
                     <img src="${imageUrl}" alt="${game.title}" class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" 
                          onerror="this.src='https://via.placeholder.com/300x300/cccccc/333333?text=Game'">
-                </div>
-                
-                ${starsHtml}
-                
-                <div class="game-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[rgba(0,0,0,0.9)] to-transparent p-[12px_10px_8px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <h3 class="text-white text-[0.9rem] font-semibold m-0 truncate">${game.title}</h3>
-                    <p class="text-[rgba(255,255,255,0.7)] text-[0.75rem] m-0">${game.category}</p>
                 </div>
                 
                 <button class="favorite-btn ${favoriteClass} absolute top-[8px] right-[8px] bg-[var(--glass-effect-dark)] border border-[rgba(255,255,255,0.2)] w-[34px] h-[34px] rounded-full flex items-center justify-center cursor-pointer text-white transition-all duration-200 backdrop-blur-[8px] text-[1rem] opacity-0 group-hover:opacity-100 hover:bg-[var(--glass-effect-darker)] hover:text-[var(--favorite-color)] hover:scale-[1.1]" 
@@ -982,6 +946,22 @@ const api = {
                     current_password: currentPassword,
                     new_password: newPassword,
                     confirm_new_password: confirmNewPassword
+                })
+            });
+            return response.json();
+        } catch (error) {
+            return { success: false, error: 'Network error' };
+        }
+    },
+    async updateProfile(profileData) {
+        try {
+            const response = await fetch('/api/auth/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: profileData.name,
+                    email: profileData.email,
+                    avatar: profileData.avatar
                 })
             });
             return response.json();
@@ -1342,13 +1322,25 @@ function updateUserUI() {
     const userBtn = document.getElementById('userBtn');
     const createGameBtn = document.getElementById('createGameBtn');
     
+    // Obtener avatar de cualquiera de las dos ubicaciones posibles
+    const avatarUrl = AppState.currentUser.avatar || 
+                      (AppState.currentUser.profile && AppState.currentUser.profile.avatar);
+    
     if (userBtn) {
-        if (AppState.currentUser.profile && AppState.currentUser.profile.avatar) {
-            userBtn.innerHTML = `<img src="${AppState.currentUser.profile.avatar}" 
+        if (avatarUrl) {
+            // Mostrar imagen de avatar en el botón del header
+            userBtn.innerHTML = `<img src="${avatarUrl}" 
                 alt="${AppState.currentUser.name}" 
-                style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">`;
+                style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
         } else {
-            userBtn.innerHTML = '<i class="fas fa-user-circle"></i>';
+            // Mostrar iniciales si no hay avatar
+            const initials = AppState.currentUser.name
+                .split(' ')
+                .map(n => n[0])
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+            userBtn.innerHTML = `<span style="font-size: 1.1rem; font-weight: 600;">${initials}</span>`;
         }
         userBtn.title = 'Mi cuenta';
         userBtn.classList.add('user-logged-in');
@@ -1366,11 +1358,13 @@ function updateUserUI() {
     if (userEmailElement) userEmailElement.textContent = AppState.currentUser.email;
     
     if (userAvatarElement) {
-        if (AppState.currentUser.profile && AppState.currentUser.profile.avatar) {
-            userAvatarElement.innerHTML = `<img src="${AppState.currentUser.profile.avatar}" 
+        if (avatarUrl) {
+            // Mostrar imagen de avatar en el panel de usuario
+            userAvatarElement.innerHTML = `<img src="${avatarUrl}" 
                 alt="${AppState.currentUser.name}" 
                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
         } else {
+            // Mostrar iniciales si no hay avatar
             const initials = AppState.currentUser.name
                 .split(' ')
                 .map(n => n[0])
@@ -1383,6 +1377,11 @@ function updateUserUI() {
     
     updateUserStats();
     hideAuthModal();
+}
+
+// Función auxiliar para actualizar solo el display (reutilizable)
+function updateUserDisplay() {
+    updateUserUI();
 }
 
 function resetUserUI() {
@@ -1587,6 +1586,343 @@ function hideChangePasswordModal() {
         if (form) form.reset();
     }
 }
+let currentProfileImageFile = null;
+let currentProfileImageData = null;
+
+// Avatares genéricos predefinidos
+const GENERIC_AVATARS = [
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=c0aede',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=Midnight&backgroundColor=d1d4f9',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Luna&backgroundColor=ffd5dc',
+    'https://api.dicebear.com/7.x/micah/svg?seed=Shadow&backgroundColor=ffdfbf',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=Pixel&backgroundColor=b6e3f4',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Max&backgroundColor=c0aede',
+    'https://api.dicebear.com/7.x/micah/svg?seed=Nova&backgroundColor=d1d4f9',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=Bolt&backgroundColor=ffd5dc',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Sky&backgroundColor=ffdfbf'
+];
+
+function showEditProfileModal() {
+    const editProfileModal = document.getElementById('editProfileModal');
+    if (!editProfileModal) return;
+    
+    // Cargar datos actuales del usuario
+    if (AppState.currentUser) {
+        const nameInput = document.getElementById('editProfileName');
+        const emailInput = document.getElementById('editProfileEmail');
+        const avatarPreview = document.getElementById('editProfileAvatarPreview');
+        const avatarImage = document.getElementById('editProfileAvatarImage');
+        const avatarIcon = document.getElementById('editProfileAvatarIcon');
+        const removePhotoBtn = document.getElementById('removeProfilePhoto');
+        
+        if (nameInput) nameInput.value = AppState.currentUser.name || '';
+        if (emailInput) emailInput.value = AppState.currentUser.email || '';
+        
+        // Mostrar avatar actual si existe
+        if (AppState.currentUser.avatar) {
+            if (avatarImage) {
+                avatarImage.src = AppState.currentUser.avatar;
+                avatarImage.classList.add('show');
+            }
+            if (avatarIcon) avatarIcon.classList.add('hide');
+            if (avatarPreview) avatarPreview.classList.add('has-image');
+            if (removePhotoBtn) removePhotoBtn.classList.add('show');
+            currentProfileImageData = AppState.currentUser.avatar;
+        } else {
+            if (avatarImage) avatarImage.classList.remove('show');
+            if (avatarIcon) avatarIcon.classList.remove('hide');
+            if (avatarPreview) avatarPreview.classList.remove('has-image');
+            if (removePhotoBtn) removePhotoBtn.classList.remove('show');
+            currentProfileImageData = null;
+        }
+    }
+    
+    // Renderizar galería de avatares genéricos
+    renderGenericAvatars();
+    
+    editProfileModal.classList.add('show');
+    editProfileModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Setup drag & drop
+    setupProfileImageUpload();
+}
+
+function renderGenericAvatars() {
+    const container = document.getElementById('genericAvatarsGrid');
+    if (!container) return;
+    
+    let html = '';
+    GENERIC_AVATARS.forEach((avatarUrl, index) => {
+        const isSelected = currentProfileImageData === avatarUrl;
+        html += `
+            <div class="generic-avatar-option ${isSelected ? 'selected' : ''}" 
+                 data-avatar-url="${avatarUrl}"
+                 title="Avatar ${index + 1}">
+                <img src="${avatarUrl}" alt="Avatar ${index + 1}">
+                ${isSelected ? '<i class="fas fa-check-circle selected-badge"></i>' : ''}
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    
+    // Add click listeners
+    container.querySelectorAll('.generic-avatar-option').forEach(option => {
+        option.addEventListener('click', function() {
+            selectGenericAvatar(this.getAttribute('data-avatar-url'));
+        });
+    });
+}
+
+function selectGenericAvatar(avatarUrl) {
+    const avatarImage = document.getElementById('editProfileAvatarImage');
+    const avatarIcon = document.getElementById('editProfileAvatarIcon');
+    const avatarPreview = document.getElementById('editProfileAvatarPreview');
+    const removePhotoBtn = document.getElementById('removeProfilePhoto');
+    
+    // Update preview
+    if (avatarImage) {
+        avatarImage.src = avatarUrl;
+        avatarImage.classList.add('show');
+    }
+    if (avatarIcon) avatarIcon.classList.add('hide');
+    if (avatarPreview) avatarPreview.classList.add('has-image');
+    if (removePhotoBtn) removePhotoBtn.classList.add('show');
+    
+    // Update current data
+    currentProfileImageData = avatarUrl;
+    currentProfileImageFile = null; // Clear file if any
+    
+    // Update selection in grid
+    renderGenericAvatars();
+    
+    api.showNotification('Avatar seleccionado', 'success');
+}
+function hideEditProfileModal() {
+    const editProfileModal = document.getElementById('editProfileModal');
+    if (editProfileModal) {
+        editProfileModal.classList.remove('show');
+        editProfileModal.classList.add('hidden');
+        document.body.style.overflow = '';
+        
+        const form = document.getElementById('editProfileForm');
+        if (form) form.reset();
+        
+        // Reset image
+        currentProfileImageFile = null;
+        const avatarImage = document.getElementById('editProfileAvatarImage');
+        const avatarIcon = document.getElementById('editProfileAvatarIcon');
+        const removePhotoBtn = document.getElementById('removeProfilePhoto');
+        
+        if (avatarImage) avatarImage.classList.remove('show');
+        if (avatarIcon) avatarIcon.classList.remove('hide');
+        if (removePhotoBtn) removePhotoBtn.classList.remove('show');
+    }
+}
+
+function setupProfileImageUpload() {
+    const dropzone = document.getElementById('profileDropzone');
+    const fileInput = document.getElementById('profileImageInput');
+    const avatarPreview = document.getElementById('editProfileAvatarPreview');
+    const removePhotoBtn = document.getElementById('removeProfilePhoto');
+    
+    if (!dropzone || !fileInput) return;
+    
+    // Remover listeners antiguos si existen (clonar y reemplazar el elemento)
+    const newDropzone = dropzone.cloneNode(true);
+    dropzone.parentNode.replaceChild(newDropzone, dropzone);
+    
+    const newAvatarPreview = avatarPreview.cloneNode(true);
+    avatarPreview.parentNode.replaceChild(newAvatarPreview, avatarPreview);
+    
+    const newFileInput = fileInput.cloneNode(true);
+    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+    
+    // Actualizar referencias
+    const finalDropzone = document.getElementById('profileDropzone');
+    const finalFileInput = document.getElementById('profileImageInput');
+    const finalAvatarPreview = document.getElementById('editProfileAvatarPreview');
+    const finalRemovePhotoBtn = document.getElementById('removeProfilePhoto');
+    
+    // Click to select file
+    const handleClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        finalFileInput.click();
+    };
+    
+    finalDropzone.addEventListener('click', handleClick);
+    finalAvatarPreview.addEventListener('click', handleClick);
+    
+    // File input change
+    finalFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleProfileImageFile(file);
+        }
+    });
+    
+    // Drag & Drop events
+    finalDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        finalDropzone.classList.add('dragover');
+    });
+    
+    finalDropzone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        finalDropzone.classList.remove('dragover');
+    });
+    
+    finalDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        finalDropzone.classList.remove('dragover');
+        
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            handleProfileImageFile(file);
+        } else {
+            api.showNotification('Por favor, sube solo archivos de imagen', 'error');
+        }
+    });
+    
+    // Remove photo button
+    if (finalRemovePhotoBtn) {
+        // Remover listeners antiguos
+        const newRemoveBtn = finalRemovePhotoBtn.cloneNode(true);
+        finalRemovePhotoBtn.parentNode.replaceChild(newRemoveBtn, finalRemovePhotoBtn);
+        
+        const refreshedRemoveBtn = document.getElementById('removeProfilePhoto');
+        refreshedRemoveBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            removeProfilePhoto();
+        });
+    }
+}
+
+function handleProfileImageFile(file) {
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+        api.showNotification('La imagen es demasiado grande (máx. 5MB)', 'error');
+        return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        api.showNotification('Por favor, sube solo archivos de imagen', 'error');
+        return;
+    }
+    
+    currentProfileImageFile = file;
+    
+    // Read and preview image
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const avatarImage = document.getElementById('editProfileAvatarImage');
+        const avatarIcon = document.getElementById('editProfileAvatarIcon');
+        const avatarPreview = document.getElementById('editProfileAvatarPreview');
+        const removePhotoBtn = document.getElementById('removeProfilePhoto');
+        
+        if (avatarImage) {
+            avatarImage.src = e.target.result;
+            avatarImage.classList.add('show');
+            currentProfileImageData = e.target.result;
+        }
+        if (avatarIcon) avatarIcon.classList.add('hide');
+        if (avatarPreview) avatarPreview.classList.add('has-image');
+        if (removePhotoBtn) removePhotoBtn.classList.add('show');
+        
+        api.showNotification('Imagen cargada correctamente', 'success');
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeProfilePhoto() {
+    currentProfileImageFile = null;
+    currentProfileImageData = null;
+    
+    const avatarImage = document.getElementById('editProfileAvatarImage');
+    const avatarIcon = document.getElementById('editProfileAvatarIcon');
+    const avatarPreview = document.getElementById('editProfileAvatarPreview');
+    const removePhotoBtn = document.getElementById('removeProfilePhoto');
+    const fileInput = document.getElementById('profileImageInput');
+    
+    if (avatarImage) {
+        avatarImage.src = '';
+        avatarImage.classList.remove('show');
+    }
+    if (avatarIcon) avatarIcon.classList.remove('hide');
+    if (avatarPreview) avatarPreview.classList.remove('has-image');
+    if (removePhotoBtn) removePhotoBtn.classList.remove('show');
+    if (fileInput) fileInput.value = '';
+    
+    api.showNotification('Foto de perfil eliminada', 'info');
+}
+
+async function handleEditProfileSubmit(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('editProfileName').value.trim();
+    const email = document.getElementById('editProfileEmail').value.trim();
+    
+    if (!name || !email) {
+        api.showNotification('Por favor, completa todos los campos', 'error');
+        return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        api.showNotification('Por favor, ingresa un email válido', 'error');
+        return;
+    }
+    
+    showPageLoading('Actualizando perfil...');
+    
+    try {
+        // Prepare data
+        const profileData = {
+            name: name,
+            email: email,
+            avatar: currentProfileImageData // Base64 image or null
+        };
+        
+        const response = await api.updateProfile(profileData);
+        
+        if (response.success) {
+            // Update AppState
+            AppState.currentUser.name = name;
+            AppState.currentUser.email = email;
+            if (currentProfileImageData) {
+                AppState.currentUser.avatar = currentProfileImageData;
+            } else {
+                delete AppState.currentUser.avatar;
+            }
+            
+            // Update UI
+            updateUserDisplay();
+            
+            api.showNotification(response.message || 'Perfil actualizado con éxito', 'success');
+            hideEditProfileModal();
+        } else {
+            api.showNotification(response.error || 'Error al actualizar perfil', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        api.showNotification('Error de conexión al actualizar perfil', 'error');
+    } finally {
+        hidePageLoading();
+    }
+}
+
+// ==========================================
+// END EDIT PROFILE MODAL FUNCTIONS
+// ==========================================
 
 function setupEventListeners() {
     const toggleSidebarBtn = document.getElementById('toggleSidebar');
@@ -1777,6 +2113,22 @@ function setupEventListeners() {
     const closeChangePasswordBtn = document.getElementById('closeChangePassword');
     if (closeChangePasswordBtn) {
         closeChangePasswordBtn.addEventListener('click', hideChangePasswordModal);
+    }
+
+    // Edit Profile Modal listeners
+    const closeEditProfileBtn = document.getElementById('closeEditProfile');
+    if (closeEditProfileBtn) {
+        closeEditProfileBtn.addEventListener('click', hideEditProfileModal);
+    }
+
+    const cancelEditProfileBtn = document.getElementById('cancelEditProfile');
+    if (cancelEditProfileBtn) {
+        cancelEditProfileBtn.addEventListener('click', hideEditProfileModal);
+    }
+
+    const editProfileForm = document.getElementById('editProfileForm');
+    if (editProfileForm) {
+        editProfileForm.addEventListener('submit', handleEditProfileSubmit);
     }
 
     const changePasswordForm = document.getElementById('changePasswordForm');
@@ -1994,25 +2346,35 @@ function setupEventListeners() {
         const toggleBtn = document.getElementById('toggleSidebar');
         const overlay = document.querySelector('.sidebar-overlay');
         
-        
-        // Elementos del header que no deben cerrar el sidebar
-        const userBtn = document.getElementById('userBtn');
-        const notificationsBtn = document.getElementById('notificationsBtn');
-        const createGameBtn = document.getElementById('createGameBtn');
-        const mobileSearchBtn = document.getElementById('mobileSearchBtn');
-        const themeToggle = document.getElementById('themeToggle');
-        
-        // Si el clic fue en algún botón del header, no cerrar el sidebar
-        const isHeaderButton = 
-            (userBtn && userBtn.contains(e.target)) ||
-            (notificationsBtn && notificationsBtn.contains(e.target)) ||
-            (createGameBtn && createGameBtn.contains(e.target)) ||
-            (mobileSearchBtn && mobileSearchBtn.contains(e.target)) ||
-            (themeToggle && themeToggle.contains(e.target));
+        // Solo cerrar sidebar en móvil cuando el click fue en el overlay
         if (window.innerWidth <= 1024 && sidebar && !sidebar.classList.contains('hidden')) {
-            if (!sidebar.contains(e.target) && 
-                (!toggleBtn || !toggleBtn.contains(e.target)) &&
-                (!overlay || overlay.contains(e.target)) && !isHeaderButton) {
+            // Elementos del header y paneles que NO deben cerrar el sidebar
+            const userBtn = document.getElementById('userBtn');
+            const notificationsBtn = document.getElementById('notificationsBtn');
+            const createGameBtn = document.getElementById('createGameBtn');
+            const mobileSearchBtn = document.getElementById('mobileSearchBtn');
+            const themeToggle = document.getElementById('themeToggle');
+            const userPanel = document.getElementById('userPanel');
+            const notificationsPanel = document.getElementById('notificationsPanel');
+            const authModal = document.getElementById('authModal');
+            const createGameContainer = document.getElementById('createGameContainer');
+            
+            // Verificar si el click fue en elementos que NO deben cerrar el sidebar
+            const isInSafeElement = 
+                sidebar.contains(e.target) ||
+                (toggleBtn && toggleBtn.contains(e.target)) ||
+                (userBtn && userBtn.contains(e.target)) ||
+                (notificationsBtn && notificationsBtn.contains(e.target)) ||
+                (createGameBtn && createGameBtn.contains(e.target)) ||
+                (mobileSearchBtn && mobileSearchBtn.contains(e.target)) ||
+                (themeToggle && themeToggle.contains(e.target)) ||
+                (userPanel && userPanel.contains(e.target)) ||
+                (notificationsPanel && notificationsPanel.contains(e.target)) ||
+                (authModal && authModal.contains(e.target)) ||
+                (createGameContainer && createGameContainer.contains(e.target));
+            
+            // Solo cerrar si el click fue en el overlay
+            if (!isInSafeElement && overlay && overlay.contains(e.target)) {
                 toggleSidebar();
             }
         }
@@ -2549,10 +2911,15 @@ function renderMobileSearchCategories() {
         { name: 'VR', icon: 'fas fa-vr-cardboard' }
     ];
     
+    // Obtener la categoría activa actual
+    const currentCategory = AppState.currentCategory || 'Todos';
+    
     let html = '';
     categories.forEach(cat => {
+        // Marcar como active si es la categoría actual
+        const activeClass = cat.name === currentCategory ? 'active' : '';
         html += `
-            <div class="search-category-card" data-category="${cat.name}">
+            <div class="search-category-card ${activeClass}" data-category="${cat.name}">
                 <div class="search-category-icon">
                     <i class="${cat.icon}"></i>
                 </div>
@@ -2568,8 +2935,26 @@ function renderMobileSearchCategories() {
     container.querySelectorAll('.search-category-card').forEach(card => {
         card.addEventListener('click', function() {
             const category = this.getAttribute('data-category');
-            filterGamesByCategory(category);
-            hideMobileSearchModal();
+            
+            // Remover active de todas las categorías móviles
+            document.querySelectorAll('.search-category-card').forEach(c => c.classList.remove('active'));
+            // Agregar active a la categoría seleccionada
+            this.classList.add('active');
+            
+            // Actualizar las categorías del sidebar
+            document.querySelectorAll('.sidebar-category').forEach(c => c.classList.remove('active'));
+            const sidebarBtn = document.querySelector(`.sidebar-category[data-category="${category}"]`);
+            if (sidebarBtn) {
+                sidebarBtn.classList.add('active');
+            }
+            
+            // Filtrar juegos
+            filterGamesLocally(category, '');
+            
+            // Pequeño delay para mostrar el feedback visual antes de cerrar
+            setTimeout(() => {
+                hideMobileSearchModal();
+            }, 200);
         });
     });
 }
