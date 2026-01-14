@@ -48,7 +48,7 @@ INITIAL_GAMES = [
         "is_favorite": False,
         "created_at": "2024-01-01",
         "views": 0,
-        "rating": 4.5,
+        "rating": 1.5,
         "created_by": "admin@test.com"
     },
     {

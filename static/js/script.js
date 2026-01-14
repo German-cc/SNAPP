@@ -112,10 +112,15 @@ function toggleNotificationsPanel() {
     if (panel.classList.contains('hidden')) {
         panel.classList.remove('hidden');
         panel.classList.add('block');
+        // Mobile notification panel might need overflow hidden on body
+        if (window.innerWidth <= 768) {
+             document.body.style.overflow = 'hidden';
+        }
         markAllNotificationsAsRead();
     } else {
         panel.classList.add('hidden');
         panel.classList.remove('block');
+        document.body.style.overflow = '';
     }
 }
 
@@ -713,9 +718,6 @@ async function loadAllGames() {
     }
 }
 
-// =========================================================
-// AQUÍ ESTÁ EL CAMBIO IMPORTANTE: Renderizado con Tailwind
-// =========================================================
 function renderFilteredGames() {
     const gamesGrid = document.getElementById('gamesGrid');
     if (!gamesGrid) return;
@@ -737,6 +739,35 @@ function renderFilteredGames() {
         
         const imageUrl = game.thumb || `https://via.placeholder.com/300x300/cccccc/333333?text=${encodeURIComponent(game.title.substring(0, 1))}`;
         
+        // Generar estrellas de rating
+        const rating = game.rating || 0;
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = rating % 1 >= 0.5;
+        let starsHtml = '';
+        
+        if (rating > 0) {
+            starsHtml = '<div class="game-rating absolute top-[8px] left-[8px] bg-[rgba(0,0,0,0.7)] backdrop-blur-[8px] px-[8px] py-[4px] rounded-[8px] flex items-center gap-[4px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">';
+            
+            // Estrellas llenas
+            for (let i = 0; i < fullStars; i++) {
+                starsHtml += '<i class="fas fa-star text-[var(--star-color)] text-[0.85rem]"></i>';
+            }
+            
+            // Media estrella
+            if (hasHalfStar) {
+                starsHtml += '<i class="fas fa-star-half-alt text-[var(--star-color)] text-[0.85rem]"></i>';
+            }
+            
+            // Estrellas vacías
+            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+            for (let i = 0; i < emptyStars; i++) {
+                starsHtml += '<i class="far fa-star text-[var(--star-color)] text-[0.85rem] opacity-50"></i>';
+            }
+            
+            starsHtml += '<span class="text-white text-[0.75rem] font-semibold ml-[2px]">' + rating.toFixed(1) + '</span>';
+            starsHtml += '</div>';
+        }
+        
         // Plantilla actualizada con clases de Tailwind completas
         const gameCard = `
             <div class="game-card ${gridSpan} bg-[image:var(--gradient-card)] rounded-[12px] shadow-[var(--shadow-large)] overflow-visible cursor-pointer transition-all duration-300 ease-out relative block border-[2px] border-transparent hover:-translate-y-[8px] hover:scale-[1.02] hover:shadow-[0_15px_30px_rgba(130,102,90,0.3)] hover:border-[var(--accent)] group [will-change:transform]" 
@@ -747,6 +778,13 @@ function renderFilteredGames() {
                 <div class="rounded-[12px] overflow-hidden w-full h-full">
                     <img src="${imageUrl}" alt="${game.title}" class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" 
                          onerror="this.src='https://via.placeholder.com/300x300/cccccc/333333?text=Game'">
+                </div>
+                
+                ${starsHtml}
+                
+                <div class="game-info absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[rgba(0,0,0,0.9)] to-transparent p-[12px_10px_8px] opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <h3 class="text-white text-[0.9rem] font-semibold m-0 truncate">${game.title}</h3>
+                    <p class="text-[rgba(255,255,255,0.7)] text-[0.75rem] m-0">${game.category}</p>
                 </div>
                 
                 <button class="favorite-btn ${favoriteClass} absolute top-[8px] right-[8px] bg-[var(--glass-effect-dark)] border border-[rgba(255,255,255,0.2)] w-[34px] h-[34px] rounded-full flex items-center justify-center cursor-pointer text-white transition-all duration-200 backdrop-blur-[8px] text-[1rem] opacity-0 group-hover:opacity-100 hover:bg-[var(--glass-effect-darker)] hover:text-[var(--favorite-color)] hover:scale-[1.1]" 
@@ -1021,6 +1059,76 @@ document.addEventListener('DOMContentLoaded', async function() {
             addNotification(`¡Bienvenido de nuevo, ${AppState.currentUser.name}!`, 'Esperamos que disfrutes de nuestros juegos.', 'welcome');
         }
     }, 2000);
+
+// =================================================================
+    // FIX: Handle Resize Events to Reset Mobile States when Switching
+    // =================================================================
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 1024) {
+            // 1. Reset Sidebar & Main Content classes
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            // Usar AppState en lugar de localStorage para respetar el estado actual
+            const shouldShowSidebar = AppState.sidebarVisible;
+
+            if (shouldShowSidebar) {
+                if (sidebar) {
+                    sidebar.classList.remove('hidden');
+                    sidebar.classList.remove('-translate-x-full');
+                }
+                if (mainContent) {
+                    mainContent.classList.remove('sidebar-hidden', 'ml-0', 'w-full');
+                    mainContent.classList.add('ml-[68px]', 'w-[calc(100vw-90px)]');
+                }
+                AppState.sidebarVisible = true;
+            } else {
+                // If it was hidden by preference, ensure desktop hidden styling
+                if (sidebar) sidebar.classList.add('hidden');
+                if (mainContent) {
+                    mainContent.classList.add('sidebar-hidden', 'ml-0', 'w-full');
+                    mainContent.classList.remove('ml-[68px]', 'w-[calc(100vw-90px)]');
+                }
+            }
+
+            // 2. Remove Mobile Overlay
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (overlay) overlay.remove();
+
+            // 3. Force close Mobile Search if open AND clean up its content
+            const mobileSearchModal = document.getElementById('mobileSearchModal');
+            if (mobileSearchModal?.classList.contains('show')) {
+                hideMobileSearchModal();
+            }
+            // Also ensure modal is completely hidden even if show class wasn't present
+            if (mobileSearchModal) {
+                mobileSearchModal.classList.remove('show');
+                // Clean up search input and results
+                const mobileSearchInput = document.getElementById('mobileSearchInput');
+                const mobileSearchResults = document.getElementById('mobileSearchResults');
+                const mobileSearchCategories = document.getElementById('mobileSearchCategories');
+                
+                if (mobileSearchInput) mobileSearchInput.value = '';
+                if (mobileSearchResults) {
+                    mobileSearchResults.style.display = 'none';
+                    mobileSearchResults.innerHTML = '';
+                }
+                if (mobileSearchCategories) {
+                    mobileSearchCategories.style.display = 'grid';
+                }
+            }
+
+            // 4. Update Icons
+            updateSidebarIcon();
+            
+            // 5. Unlock scroll if it was locked by a mobile modal
+            if (!document.getElementById('authModal')?.classList.contains('show') && 
+                !document.getElementById('createGameContainer')?.classList.contains('show') &&
+                !document.getElementById('userPanel')?.classList.contains('show') &&
+                !document.getElementById('notificationsPanel')?.classList.contains('show')) {
+                document.body.style.overflow = '';
+            }
+        }
+    });
 });
 
 function toggleSidebar() {
@@ -1305,7 +1413,9 @@ function updateThemeIcon() {
     if (themeToggle) {
         const icon = themeToggle.querySelector('i');
         if (icon) {
-            icon.className = AppState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            const baseClasses = 'w-[24px] text-center mr-[0.75rem]';
+            const faClass = AppState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            icon.className = `${faClass} ${baseClasses}`;
         }
     }
 }
@@ -1765,6 +1875,7 @@ function setupEventListeners() {
                 (!notificationsBtn || !notificationsBtn.contains(e.target))) {
                 notificationsPanel.classList.remove('show');
                 notificationsPanel.classList.add('hidden');
+                document.body.style.overflow = '';
             }
         });
 
@@ -1854,6 +1965,7 @@ function setupEventListeners() {
             (!notificationsBtn || !notificationsBtn.contains(e.target))) {
             notificationsPanel.classList.remove('show');
             notificationsPanel.classList.add('hidden');
+            document.body.style.overflow = '';
         }
     });
 
@@ -1872,6 +1984,7 @@ function setupEventListeners() {
             if (notificationsPanel && notificationsPanel.classList.contains('show')) {
                 notificationsPanel.classList.remove('show');
                 notificationsPanel.classList.add('hidden');
+                document.body.style.overflow = '';
             }
         }
     });
@@ -1881,10 +1994,25 @@ function setupEventListeners() {
         const toggleBtn = document.getElementById('toggleSidebar');
         const overlay = document.querySelector('.sidebar-overlay');
         
+        
+        // Elementos del header que no deben cerrar el sidebar
+        const userBtn = document.getElementById('userBtn');
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        const createGameBtn = document.getElementById('createGameBtn');
+        const mobileSearchBtn = document.getElementById('mobileSearchBtn');
+        const themeToggle = document.getElementById('themeToggle');
+        
+        // Si el clic fue en algún botón del header, no cerrar el sidebar
+        const isHeaderButton = 
+            (userBtn && userBtn.contains(e.target)) ||
+            (notificationsBtn && notificationsBtn.contains(e.target)) ||
+            (createGameBtn && createGameBtn.contains(e.target)) ||
+            (mobileSearchBtn && mobileSearchBtn.contains(e.target)) ||
+            (themeToggle && themeToggle.contains(e.target));
         if (window.innerWidth <= 1024 && sidebar && !sidebar.classList.contains('hidden')) {
             if (!sidebar.contains(e.target) && 
                 (!toggleBtn || !toggleBtn.contains(e.target)) &&
-                (!overlay || overlay.contains(e.target))) {
+                (!overlay || overlay.contains(e.target)) && !isHeaderButton) {
                 toggleSidebar();
             }
         }
@@ -2349,11 +2477,18 @@ window.testNotification = function(type = 'info') {
 function showMobileSearchModal() {
     const modal = document.getElementById('mobileSearchModal');
     const input = document.getElementById('mobileSearchInput');
+    const resultsContainer = document.getElementById('mobileSearchResults');
     
     if (!modal) return;
     
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
+    
+    // Hide results container initially
+    if (resultsContainer) {
+        resultsContainer.classList.add('hidden');
+        resultsContainer.innerHTML = '';
+    }
     
     // Show categories initially
     renderMobileSearchCategories();
@@ -2378,11 +2513,12 @@ function hideMobileSearchModal() {
     // Clear search
     if (input) input.value = '';
     if (resultsContainer) {
-        resultsContainer.style.display = 'none';
+        resultsContainer.classList.add('hidden');
         resultsContainer.innerHTML = '';
     }
     if (categoriesContainer) {
-        categoriesContainer.style.display = 'grid';
+        categoriesContainer.classList.add('hidden');
+        categoriesContainer.innerHTML = '';
     }
 }
 
@@ -2426,7 +2562,7 @@ function renderMobileSearchCategories() {
     });
     
     container.innerHTML = html;
-    container.style.display = 'grid';
+    container.classList.remove('hidden');
     
     // Add click listeners
     container.querySelectorAll('.search-category-card').forEach(card => {
@@ -2447,14 +2583,14 @@ function handleMobileSearch(query) {
     query = query.trim().toLowerCase();
     
     if (query === '') {
-        categoriesContainer.style.display = 'grid';
-        resultsContainer.style.display = 'none';
+        categoriesContainer.classList.remove('hidden');
+        resultsContainer.classList.add('hidden');
         resultsContainer.innerHTML = '';
         return;
     }
     
-    categoriesContainer.style.display = 'none';
-    resultsContainer.style.display = 'grid';
+    categoriesContainer.classList.add('hidden');
+    resultsContainer.classList.remove('hidden');
     
     const filteredGames = AppState.games.filter(game => {
         const titleMatch = game.title.toLowerCase().includes(query);
@@ -2482,21 +2618,21 @@ function handleMobileSearch(query) {
             <div class="game-card-mobile" data-game-url="${game.gameUrl}" style="
                 background: var(--bg-card);
                 border: 1px solid var(--border-color);
-                border-radius: 12px;
+                border-radius: 8px;
                 overflow: hidden;
                 cursor: pointer;
                 transition: all 0.25s ease;
             ">
-                <div style="position: relative; padding-bottom: 133%; overflow: hidden; background: var(--bg-main);">
+                <div style="position: relative; padding-bottom: 75%; overflow: hidden; background: var(--bg-main);">
                     <img src="${imageUrl}" 
                          alt="${game.title}"
                          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"
                          onerror="this.src='https://via.placeholder.com/150x200/cccccc/333333?text=G'">
                 </div>
-                <div style="padding: 0.75rem;">
-                    <h3 style="margin: 0 0 0.25rem 0; font-size: 0.9rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${game.title}</h3>
-                    <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
-                        <i class="${categoryIcon}"></i> ${game.category}
+                <div style="padding: 0.5rem;">
+                    <h3 style="margin: 0 0 0.15rem 0; font-size: 0.8rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">${game.title}</h3>
+                    <p style="margin: 0; font-size: 0.65rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.2rem;">
+                        <i class="${categoryIcon}" style="font-size: 0.6rem;"></i> ${game.category}
                     </p>
                 </div>
             </div>

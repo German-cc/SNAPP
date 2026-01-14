@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "title": "Pilar",
+    "category": "Puzzle",
+    "thumb": "/static/uploads/games/Stack/ico.png",
+    "gameUrl": "/static/uploads/games/Stack/index.html",
+    "description": "Juego de apilar bloques",
+    "developer": "SNAPP Team",
+    "difficulty": "Media",
+    "players": "1",
+    "tags": [
+      "puzzle",
+      "estrategia"
+    ],
+    "is_favorite": false,
+    "created_at": "2024-01-01",
+    "views": 0,
+    "rating": 4.5,
+    "created_by": "admin@test.com"
+  },
+  {
+    "id": 2,
+    "title": "Sudoku",
+    "category": "Puzzle",
+    "thumb": "/static/uploads/games/Sudoku/ico.png",
+    "gameUrl": "/static/uploads/games/Sudoku/Juego/index.html",
+    "description": "Juego de lógica numérica en el que debes completar una cuadrícula respetando las reglas del Sudoku",
+    "developer": "SNAPP Team",
+    "difficulty": "Media",
+    "players": "1",
+    "tags": [
+      "puzzle",
+      "estrategia"
+    ],
+    "is_favorite": false,
+    "created_at": "2024-01-01",
+    "views": 1,
+    "rating": 4.5,
+    "created_by": "admin@test.com"
+  }
+]
