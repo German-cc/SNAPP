@@ -3330,32 +3330,59 @@ function handleMobileSearch(query) {
     const resultsContainer = document.getElementById('mobileSearchResults');
     const categoriesContainer = document.getElementById('mobileSearchCategories');
     
+    // Validación de seguridad por si no existen los elementos en el HTML
     if (!resultsContainer || !categoriesContainer) return;
     
-    query = query.trim().toLowerCase();
+    const cleanQuery = query.trim().toLowerCase();
     
-    if (query === '') {
+    // ==========================================
+    // ESCENARIO 1: INPUT VACÍO (Mostrar Categorías)
+    // ==========================================
+    if (cleanQuery === '') {
+        // 1. FORZAMOS mostrar categorías (quitamos el bloqueo)
         categoriesContainer.classList.remove('hidden');
+        // Usamos removeProperty para que el CSS original tome el control, 
+        // o forzamos el grid si es necesario.
+        categoriesContainer.style.removeProperty('display'); 
+        
+        // Si por alguna razón no se ve, descomenta la siguiente línea:
+        // categoriesContainer.style.setProperty('display', 'grid', 'important');
+
+        // 2. FORZAMOS ocultar resultados
         resultsContainer.classList.add('hidden');
+        resultsContainer.style.setProperty('display', 'none', 'important');
+        
+        // 3. Limpiar HTML
         resultsContainer.innerHTML = '';
         return;
     }
     
-    categoriesContainer.classList.add('hidden');
-    resultsContainer.classList.remove('hidden');
+    // ==========================================
+    // ESCENARIO 2: HAY TEXTO (Ocultar Categorías)
+    // ==========================================
     
+    // 1. FORZAMOS ocultar categorías (Esta es la clave que faltaba)
+    categoriesContainer.classList.add('hidden');
+    categoriesContainer.style.setProperty('display', 'none', 'important');
+    
+    // 2. FORZAMOS mostrar resultados
+    resultsContainer.classList.remove('hidden');
+    // Forzamos grid para que se respete el diseño
+    resultsContainer.style.setProperty('display', 'grid', 'important');
+    
+    // 3. Lógica de Filtrado (Igual que antes)
     const filteredGames = AppState.games.filter(game => {
-        const titleMatch = game.title.toLowerCase().includes(query);
-        const categoryMatch = game.category.toLowerCase().includes(query);
-        const descriptionMatch = game.description && game.description.toLowerCase().includes(query);
-        return titleMatch || categoryMatch || descriptionMatch;
+        const titleMatch = game.title.toLowerCase().includes(cleanQuery);
+        const categoryMatch = game.category.toLowerCase().includes(cleanQuery);
+        return titleMatch || categoryMatch;
     });
     
+    // 4. Renderizado
     if (filteredGames.length === 0) {
         resultsContainer.innerHTML = `
-            <div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--text-muted);">
+            <div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--text-muted); display: flex; flex-direction: column; align-items: center;">
                 <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-                <p>No se encontraron juegos</p>
+                <p style="margin: 0;">No encontramos juegos para "${query}"</p>
             </div>
         `;
         return;
@@ -3363,28 +3390,28 @@ function handleMobileSearch(query) {
     
     let html = '';
     filteredGames.slice(0, 20).forEach(game => {
-        const imageUrl = game.thumb || `https://via.placeholder.com/150x200/cccccc/333333?text=${encodeURIComponent(game.title.substring(0, 1))}`;
-        const categoryIcon = getCategoryIcon(game.category);
+        const imageUrl = game.thumb || 'https://via.placeholder.com/150';
+        const categoryIcon = getCategoryIcon(game.category); // Asegúrate que esta función exista, si no, bórrala
         
         html += `
-            <div class="game-card-mobile" data-game-url="${game.gameUrl}" style="
+            <div class="game-card-mobile animate-[fadeIn_0.2s_ease]" data-game-url="${game.gameUrl}" style="
                 background: var(--bg-card);
                 border: 1px solid var(--border-color);
                 border-radius: 8px;
                 overflow: hidden;
                 cursor: pointer;
-                transition: all 0.25s ease;
+                transition: transform 0.2s ease;
             ">
                 <div style="position: relative; padding-bottom: 75%; overflow: hidden; background: var(--bg-main);">
                     <img src="${imageUrl}" 
                          alt="${game.title}"
-                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"
-                         onerror="this.src='https://via.placeholder.com/150x200/cccccc/333333?text=G'">
+                         loading="lazy"
+                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
                 </div>
                 <div style="padding: 0.5rem;">
-                    <h3 style="margin: 0 0 0.15rem 0; font-size: 0.8rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">${game.title}</h3>
-                    <p style="margin: 0; font-size: 0.65rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.2rem;">
-                        <i class="${categoryIcon}" style="font-size: 0.6rem;"></i> ${game.category}
+                    <h3 style="margin: 0 0 0.25rem 0; font-size: 0.85rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${game.title}</h3>
+                    <p style="margin: 0; font-size: 0.7rem; color: var(--text-muted);">
+                        ${game.category}
                     </p>
                 </div>
             </div>
@@ -3393,15 +3420,16 @@ function handleMobileSearch(query) {
     
     resultsContainer.innerHTML = html;
     
+    // Reasignar clicks
     resultsContainer.querySelectorAll('.game-card-mobile').forEach(card => {
         card.addEventListener('click', function() {
             const gameUrl = this.getAttribute('data-game-url');
             if (gameUrl) {
+                document.getElementById('mobileSearchInput')?.blur();
                 hideMobileSearchModal();
-                showPageLoading('Cargando juego...');
-                setTimeout(() => {
-                    window.location.href = gameUrl;
-                }, 300);
+                // Asumiendo que tienes una función de carga, si no, usa location.href directo
+                if (typeof showPageLoading === 'function') showPageLoading('Cargando juego...');
+                setTimeout(() => window.location.href = gameUrl, 100);
             }
         });
     });
