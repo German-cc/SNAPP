@@ -296,14 +296,30 @@ def api_check_auth():
             return jsonify({'authenticated': False, 'reason': 'user_not_found'})
         
         user_data = users[user_email]
+        
+        # Ensure firstName and lastName exist
+        if 'firstName' not in user_data or 'lastName' not in user_data:
+            # Parse from name if not present
+            name_parts = user_data.get('name', '').strip().split(' ', 1)
+            if 'firstName' not in user_data:
+                user_data['firstName'] = name_parts[0] if len(name_parts) > 0 else ''
+            if 'lastName' not in user_data:
+                user_data['lastName'] = name_parts[1] if len(name_parts) > 1 else ''
+            users[user_email] = user_data
+            save_data(USERS_FILE, users)
+        
         favorites = get_user_favorites(user_email)
         session.modified = True
         
         full_user_data = {
             'name': user_data['name'],
+            'username': user_data.get('username', ''),
+            'firstName': user_data.get('firstName', ''),
+            'lastName': user_data.get('lastName', ''),
             'email': user_email,
             'role': user_data.get('role', 'user'),
             'created_at': user_data.get('created_at'),
+            'avatar': user_data.get('avatar', ''),
             'profile': user_data.get('profile', {})
         }
         
@@ -314,6 +330,7 @@ def api_check_auth():
             'session_refreshed': True
         })
     except Exception as e:
+        print(f"Error in check_auth: {str(e)}")
         return jsonify({'authenticated': False, 'error': str(e)}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -336,6 +353,7 @@ def api_login():
             session['current_user'] = {
                 'email': email,
                 'name': users[email]['name'],
+                'username': users[email].get('username', ''),
                 'role': users[email].get('role', 'user')
             }
             
@@ -345,6 +363,17 @@ def api_login():
             
             user_data = users[email]
             
+            # Ensure firstName and lastName exist
+            if 'firstName' not in user_data or 'lastName' not in user_data:
+                # Parse from name if not present
+                name_parts = user_data.get('name', '').strip().split(' ', 1)
+                if 'firstName' not in user_data:
+                    user_data['firstName'] = name_parts[0] if len(name_parts) > 0 else ''
+                if 'lastName' not in user_data:
+                    user_data['lastName'] = name_parts[1] if len(name_parts) > 1 else ''
+                users[email] = user_data
+                save_data(USERS_FILE, users)
+            
             if 'profile' not in user_data:
                 user_data['profile'] = {}
             if not user_data['profile'].get('avatar'):
@@ -352,13 +381,25 @@ def api_login():
                 users[email]['profile'] = user_data['profile']
                 save_data(USERS_FILE, users)
             
+            # Sync avatar between profile and top level
+            if user_data.get('avatar') and not user_data['profile'].get('avatar'):
+                user_data['profile']['avatar'] = user_data['avatar']
+            elif user_data['profile'].get('avatar') and not user_data.get('avatar'):
+                user_data['avatar'] = user_data['profile']['avatar']
+                users[email] = user_data
+                save_data(USERS_FILE, users)
+            
             favorites = get_user_favorites(email)
             
             full_user_data = {
                 'name': user_data['name'],
+                'username': user_data.get('username', ''),
+                'firstName': user_data.get('firstName', ''),
+                'lastName': user_data.get('lastName', ''),
                 'email': email,
                 'role': user_data.get('role', 'user'),
                 'created_at': user_data.get('created_at'),
+                'avatar': user_data.get('avatar', user_data['profile'].get('avatar', '')),
                 'profile': user_data.get('profile', {})
             }
             
@@ -371,6 +412,7 @@ def api_login():
         
         return jsonify({'error': 'Email o contraseña incorrectos'}), 401
     except Exception as e:
+        print(f"Error in login: {str(e)}")
         return jsonify({'error': 'Error interno del servidor'}), 500
 
 @app.route('/api/auth/register', methods=['POST'])
@@ -385,8 +427,10 @@ def api_register():
         email = data.get('email', '').strip().lower()
         password = data.get('password', '')
         confirm_password = data.get('confirm_password', '')
+        username = data.get('username', '').strip()
+        avatar = data.get('avatar', '').strip()
         
-        if not all([name, email, password, confirm_password]):
+        if not all([name, email, password, confirm_password, username]):
             return jsonify({'error': 'Todos los campos son requeridos'}), 400
         
         if not validate_email(email):
@@ -398,19 +442,38 @@ def api_register():
         if len(password) < 6:
             return jsonify({'error': 'La contraseña debe tener al menos 6 caracteres'}), 400
         
+        # Validate username
+        if not re.match(r'^[a-zA-Z0-9_]{3,20}$', username):
+            return jsonify({'error': 'El nombre de usuario debe tener 3-20 caracteres (solo letras, números y guión bajo)'}), 400
+        
         users = load_data(USERS_FILE, {})
         
         if email in users:
             return jsonify({'error': 'El email ya está registrado'}), 400
         
-        avatar_url = generate_avatar(email)
+        # Check if username is already taken
+        for user_data in users.values():
+            if user_data.get('username', '').lower() == username.lower():
+                return jsonify({'error': 'El nombre de usuario ya está en uso'}), 400
+        
+        # Use provided avatar or generate one
+        avatar_url = avatar if avatar else generate_avatar(email)
+        
+        # Parse name into firstName and lastName
+        name_parts = name.strip().split(' ', 1)
+        first_name = name_parts[0] if len(name_parts) > 0 else ''
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
         
         users[email] = {
             'name': name,
+            'username': username,
+            'firstName': first_name,
+            'lastName': last_name,
             'password': password,
             'role': 'user',
             'created_at': datetime.now().isoformat(),
             'last_login': None,
+            'avatar': avatar_url,  # Guardar avatar en el nivel superior también
             'profile': {
                 'bio': f'Hola, soy {name}!',
                 'website': '',
@@ -423,6 +486,7 @@ def api_register():
             session['current_user'] = {
                 'email': email,
                 'name': name,
+                'username': username,
                 'role': 'user'
             }
             
@@ -430,9 +494,13 @@ def api_register():
             
             full_user_data = {
                 'name': name,
+                'username': username,
+                'firstName': first_name,
+                'lastName': last_name,
                 'email': email,
                 'role': 'user',
                 'created_at': users[email]['created_at'],
+                'avatar': avatar_url,
                 'profile': users[email]['profile']
             }
             
@@ -445,6 +513,7 @@ def api_register():
         
         return jsonify({'error': 'Error al guardar usuario'}), 500
     except Exception as e:
+        print(f"Error in registration: {str(e)}")
         return jsonify({'error': 'Error interno del servidor'}), 500
 
 @app.route('/api/auth/logout', methods=['GET'])
@@ -650,26 +719,90 @@ def api_update_user_profile():
         if user_email not in users:
             return jsonify({'error': 'Usuario no encontrado'}), 404
         
-        # Update name
+        # Update username - check if it's unique
+        if 'username' in data and data['username'].strip():
+            new_username = data['username'].strip()
+            
+            # Validate username format
+            if not re.match(r'^[a-zA-Z0-9_]{3,20}$', new_username):
+                return jsonify({'error': 'El nombre de usuario debe tener 3-20 caracteres (solo letras, números y guión bajo)'}), 400
+            
+            # Check if username is already taken by another user
+            for email, user_data in users.items():
+                if email != user_email and user_data.get('username', '').lower() == new_username.lower():
+                    return jsonify({'error': 'El nombre de usuario ya está en uso'}), 400
+            
+            users[user_email]['username'] = new_username
+            session_user['username'] = new_username
+        
+        # Update firstName
+        if 'firstName' in data and data['firstName'].strip():
+            users[user_email]['firstName'] = data['firstName'].strip()
+        
+        # Update lastName
+        if 'lastName' in data and data['lastName'].strip():
+            users[user_email]['lastName'] = data['lastName'].strip()
+        
+        # Update full name (combine firstName and lastName)
         if 'name' in data and data['name'].strip():
             new_name = data['name'].strip()
             users[user_email]['name'] = new_name
             session_user['name'] = new_name
-            session['current_user'] = session_user
+        elif 'firstName' in data and 'lastName' in data:
+            # If name not provided but firstName and lastName are, combine them
+            new_name = f"{data['firstName'].strip()} {data['lastName'].strip()}"
+            users[user_email]['name'] = new_name
+            session_user['name'] = new_name
+        
+        # Update email
+        if 'email' in data and data['email'].strip():
+            new_email = data['email'].strip().lower()
+            
+            # Validate email format
+            if not validate_email(new_email):
+                return jsonify({'error': 'El formato del email no es válido'}), 400
+            
+            # If email is changing, check if new email is already in use
+            if new_email != user_email:
+                if new_email in users:
+                    return jsonify({'error': 'El email ya está en uso'}), 400
+                
+                # Move user data to new email key
+                users[new_email] = users.pop(user_email)
+                
+                # Update favorites to use new email
+                favorites_data = load_data(FAVORITES_FILE, {})
+                if user_email in favorites_data:
+                    favorites_data[new_email] = favorites_data.pop(user_email)
+                    save_data(FAVORITES_FILE, favorites_data)
+                
+                # Update session
+                session_user['email'] = new_email
+                user_email = new_email
         
         # Update avatar
         if 'avatar' in data:
             if 'profile' not in users[user_email]:
                 users[user_email]['profile'] = {}
+            
+            # Save avatar in both locations for compatibility
+            users[user_email]['avatar'] = data['avatar']
             users[user_email]['profile']['avatar'] = data['avatar']
+        
+        # Update session
+        session['current_user'] = session_user
         
         # Save changes
         if save_data(USERS_FILE, users):
             updated_user_data = {
                 'name': users[user_email]['name'],
+                'username': users[user_email].get('username', ''),
+                'firstName': users[user_email].get('firstName', ''),
+                'lastName': users[user_email].get('lastName', ''),
                 'email': user_email,
                 'role': users[user_email].get('role', 'user'),
                 'created_at': users[user_email].get('created_at'),
+                'avatar': users[user_email].get('avatar', ''),
                 'profile': users[user_email].get('profile', {})
             }
             
@@ -681,7 +814,8 @@ def api_update_user_profile():
         
         return jsonify({'error': 'Error al guardar cambios'}), 500
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error updating profile: {str(e)}")  # Log error for debugging
+        return jsonify({'error': 'Error interno del servidor'}), 500
     
 @app.route('/api/games/<int:game_id>', methods=['GET'])
 def api_get_game_by_id(game_id):

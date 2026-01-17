@@ -20,27 +20,48 @@ const AppState = {
             time: "Ahora",
             read: false,
             type: "welcome"
-        },
-        {
-            id: 2,
-            title: "Nuevo juego agregado",
-            message: "El juego 'Pilar' ha sido añadido a la plataforma.",
-            icon: "fas fa-plus",
-            time: "Hace 2 horas",
-            read: false,
-            type: "new_game"
-        },
-        {
-            id: 3,
-            title: "Juego favorito actualizado",
-            message: "Sudoku ha recibido una nueva actualización.",
-            icon: "fas fa-star",
-            time: "Ayer",
-            read: true,
-            type: "update"
         }
-    ]
+    ],
+    createGameFormData: {} // Para guardar el progreso del formulario
 };
+
+// Función global para cerrar TODOS los modales y paneles
+function closeAllModals() {
+    const modals = [
+        'authModal',
+        'editProfileModal', 
+        'changePasswordModal',
+        'createGameModal',
+        'createGameContainer',
+        'searchModal'
+    ];
+    
+    const panels = [
+        'notificationsPanel',
+        'userPanel'
+    ];
+    
+    // Cerrar modales
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('show');
+            modal.classList.add('hidden');
+        }
+    });
+    
+    // Cerrar paneles (usan 'block' en lugar de 'show')
+    panels.forEach(panelId => {
+        const panel = document.getElementById(panelId);
+        if (panel) {
+            panel.classList.remove('show', 'block');
+            panel.classList.add('hidden');
+        }
+    });
+    
+    // Restaurar scroll
+    document.body.style.overflow = '';
+}
 
 let sessionRefreshInterval = null;
 
@@ -108,8 +129,16 @@ function simpleHash(str) {
 function toggleNotificationsPanel() {
     const panel = document.getElementById('notificationsPanel');
     if (!panel) return;
+    
     // Usamos clases de utilidad para mostrar/ocultar en lugar de solo 'show'
     if (panel.classList.contains('hidden')) {
+        // Cerrar userPanel si está abierto
+        const userPanel = document.getElementById('userPanel');
+        if (userPanel) {
+            userPanel.classList.remove('show');
+            userPanel.classList.add('hidden');
+        }
+        
         panel.classList.remove('hidden');
         panel.classList.add('block');
         // Mobile notification panel might need overflow hidden on body
@@ -821,21 +850,21 @@ const api = {
             return { success: false, error: 'Network error' };
         }
     },
-    async register(name, email, password, confirmPassword) {
+async logout() {
         try {
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, confirm_password: confirmPassword })
-            });
+            const response = await fetch('/api/auth/logout');
             return response.json();
         } catch (error) {
             return { success: false, error: 'Network error' };
         }
     },
-    async logout() {
+    async register(name, email, password, confirmPassword, username, avatar) {
         try {
-            const response = await fetch('/api/auth/logout');
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, confirm_password: confirmPassword, username, avatar })
+            });
             return response.json();
         } catch (error) {
             return { success: false, error: 'Network error' };
@@ -959,6 +988,9 @@ const api = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    username: profileData.username,
+                    firstName: profileData.firstName,
+                    lastName: profileData.lastName,
                     name: profileData.name,
                     email: profileData.email,
                     avatar: profileData.avatar
@@ -1246,16 +1278,48 @@ async function checkAuth() {
             AppState.currentUser = response.user;
             AppState.favorites = response.favorites || [];
             
+            // Normalizar estructura de datos del usuario
+            // Asegurar que username exista
+            if (!AppState.currentUser.username && AppState.currentUser.email) {
+                AppState.currentUser.username = AppState.currentUser.email.split('@')[0];
+            }
+            
+            // Asegurar que firstName y lastName existan
+            if (!AppState.currentUser.firstName || !AppState.currentUser.lastName) {
+                const nameParts = (AppState.currentUser.name || '').trim().split(' ');
+                if (!AppState.currentUser.firstName) {
+                    AppState.currentUser.firstName = nameParts[0] || '';
+                }
+                if (!AppState.currentUser.lastName) {
+                    AppState.currentUser.lastName = nameParts.slice(1).join(' ') || '';
+                }
+            }
+            
             // Generate avatar if missing
             if (!AppState.currentUser.profile) {
                 AppState.currentUser.profile = {};
             }
-            if (!AppState.currentUser.profile.avatar) {
+            
+            // Verificar avatar en ambas ubicaciones
+            const hasAvatar = AppState.currentUser.avatar || AppState.currentUser.profile.avatar;
+            
+            if (!hasAvatar) {
                 const emailHash = md5(AppState.currentUser.email);
                 const avatarStyles = ['identicon', 'bottts', 'avataaars', 'jdenticon', 'micah'];
                 const styleIndex = Array.from(AppState.currentUser.email).reduce((sum, char) => sum + char.charCodeAt(0), 0) % avatarStyles.length;
                 const style = avatarStyles[styleIndex];
-                AppState.currentUser.profile.avatar = `https://api.dicebear.com/7.x/${style}/png?seed=${emailHash}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+                const generatedAvatar = `https://api.dicebear.com/7.x/${style}/png?seed=${emailHash}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+                
+                // Guardar en ambas ubicaciones
+                AppState.currentUser.avatar = generatedAvatar;
+                AppState.currentUser.profile.avatar = generatedAvatar;
+            } else {
+                // Sincronizar avatar entre ambas ubicaciones
+                if (AppState.currentUser.avatar && !AppState.currentUser.profile.avatar) {
+                    AppState.currentUser.profile.avatar = AppState.currentUser.avatar;
+                } else if (AppState.currentUser.profile.avatar && !AppState.currentUser.avatar) {
+                    AppState.currentUser.avatar = AppState.currentUser.profile.avatar;
+                }
             }
 
             updateUserUI();
@@ -1312,7 +1376,6 @@ function updateUserStats() {
         userGamesCount.textContent = userGames.length;
     }
 }
-
 function updateUserUI() {
     if (!AppState.currentUser) {
         resetUserUI();
@@ -1351,10 +1414,15 @@ function updateUserUI() {
     }
 
     const userNameElement = document.getElementById('userName');
+    const userUsernameElement = document.getElementById('userUsername');
     const userEmailElement = document.getElementById('userEmail');
     const userAvatarElement = document.getElementById('userAvatar');
     
     if (userNameElement) userNameElement.textContent = AppState.currentUser.name;
+    if (userUsernameElement) {
+        const username = AppState.currentUser.username || AppState.currentUser.email.split('@')[0];
+        userUsernameElement.textContent = `@${username}`;
+    }
     if (userEmailElement) userEmailElement.textContent = AppState.currentUser.email;
     
     if (userAvatarElement) {
@@ -1378,8 +1446,6 @@ function updateUserUI() {
     updateUserStats();
     hideAuthModal();
 }
-
-// Función auxiliar para actualizar solo el display (reutilizable)
 function updateUserDisplay() {
     updateUserUI();
 }
@@ -1420,6 +1486,7 @@ function updateThemeIcon() {
 }
 
 function showAuthModal(tab = 'login') {
+    closeAllModals(); // Cerrar otros modales primero
     const authModal = document.getElementById('authModal');
     if (authModal) {
         authModal.classList.add('show');
@@ -1464,6 +1531,13 @@ function toggleUserPanel() {
 }
 
 function showUserPanel() {
+    // Cerrar notificaciones si está abierto
+    const notificationsPanel = document.getElementById('notificationsPanel');
+    if (notificationsPanel) {
+        notificationsPanel.classList.remove('block');
+        notificationsPanel.classList.add('hidden');
+    }
+    
     const userPanel = document.getElementById('userPanel');
     if (userPanel && AppState.currentUser) {
         userPanel.classList.add('show');
@@ -1568,6 +1642,7 @@ function showEditProfileModal() {
 }
 
 function showChangePasswordModal() {
+    closeAllModals(); // Cerrar otros modales primero
     const changePasswordModal = document.getElementById('changePasswordModal');
     if (changePasswordModal) {
         changePasswordModal.classList.add('show');
@@ -1604,11 +1679,16 @@ const GENERIC_AVATARS = [
 ];
 
 function showEditProfileModal() {
+    closeAllModals(); // Cerrar otros modales primero
     const editProfileModal = document.getElementById('editProfileModal');
     if (!editProfileModal) return;
     
+    
     // Cargar datos actuales del usuario
     if (AppState.currentUser) {
+        const usernameInput = document.getElementById('editProfileUsername');
+        const firstNameInput = document.getElementById('editProfileFirstName');
+        const lastNameInput = document.getElementById('editProfileLastName');
         const nameInput = document.getElementById('editProfileName');
         const emailInput = document.getElementById('editProfileEmail');
         const avatarPreview = document.getElementById('editProfileAvatarPreview');
@@ -1616,21 +1696,46 @@ function showEditProfileModal() {
         const avatarIcon = document.getElementById('editProfileAvatarIcon');
         const removePhotoBtn = document.getElementById('removeProfilePhoto');
         
-        if (nameInput) nameInput.value = AppState.currentUser.name || '';
+        // Cargar username - usar el del usuario o generar uno del email
+        const username = AppState.currentUser.username || AppState.currentUser.email.split('@')[0];
+        if (usernameInput) usernameInput.value = username;
+        
+        // Cargar nombre y apellido si existen separados, sino partir el nombre completo
+        if (AppState.currentUser.firstName && AppState.currentUser.lastName) {
+            if (firstNameInput) firstNameInput.value = AppState.currentUser.firstName;
+            if (lastNameInput) lastNameInput.value = AppState.currentUser.lastName;
+            if (nameInput) nameInput.value = `${AppState.currentUser.firstName} ${AppState.currentUser.lastName}`;
+        } else {
+            // Intentar partir el nombre completo
+            const fullName = AppState.currentUser.name || '';
+            const nameParts = fullName.trim().split(' ');
+            if (firstNameInput) firstNameInput.value = nameParts[0] || '';
+            if (lastNameInput) lastNameInput.value = nameParts.slice(1).join(' ') || '';
+            if (nameInput) nameInput.value = fullName;
+        }
+        
         if (emailInput) emailInput.value = AppState.currentUser.email || '';
         
+        // Obtener avatar de cualquiera de las dos ubicaciones posibles
+        const currentAvatar = AppState.currentUser.avatar || 
+                             (AppState.currentUser.profile && AppState.currentUser.profile.avatar);
+        
         // Mostrar avatar actual si existe
-        if (AppState.currentUser.avatar) {
+        if (currentAvatar) {
             if (avatarImage) {
-                avatarImage.src = AppState.currentUser.avatar;
+                avatarImage.src = currentAvatar;
                 avatarImage.classList.add('show');
+                avatarImage.classList.remove('hidden');
             }
             if (avatarIcon) avatarIcon.classList.add('hide');
             if (avatarPreview) avatarPreview.classList.add('has-image');
             if (removePhotoBtn) removePhotoBtn.classList.add('show');
-            currentProfileImageData = AppState.currentUser.avatar;
+            currentProfileImageData = currentAvatar;
         } else {
-            if (avatarImage) avatarImage.classList.remove('show');
+            if (avatarImage) {
+                avatarImage.classList.remove('show');
+                avatarImage.classList.add('hidden');
+            }
             if (avatarIcon) avatarIcon.classList.remove('hide');
             if (avatarPreview) avatarPreview.classList.remove('has-image');
             if (removePhotoBtn) removePhotoBtn.classList.remove('show');
@@ -1867,10 +1972,12 @@ function removeProfilePhoto() {
 async function handleEditProfileSubmit(e) {
     e.preventDefault();
     
-    const name = document.getElementById('editProfileName').value.trim();
+    const username = document.getElementById('editProfileUsername').value.trim();
+    const firstName = document.getElementById('editProfileFirstName').value.trim();
+    const lastName = document.getElementById('editProfileLastName').value.trim();
     const email = document.getElementById('editProfileEmail').value.trim();
     
-    if (!name || !email) {
+    if (!username || !firstName || !lastName || !email) {
         api.showNotification('Por favor, completa todos los campos', 'error');
         return;
     }
@@ -1882,26 +1989,43 @@ async function handleEditProfileSubmit(e) {
         return;
     }
     
+    // Validate username format
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+        api.showNotification('El nombre de usuario debe tener 3-20 caracteres (solo letras, números y guión bajo)', 'error');
+        return;
+    }
+    
     showPageLoading('Actualizando perfil...');
     
     try {
-        // Prepare data
+        // Prepare data - keep existing avatar if no new one was uploaded
+        const fullName = `${firstName} ${lastName}`;
         const profileData = {
-            name: name,
+            username: username,
+            firstName: firstName,
+            lastName: lastName,
+            name: fullName,
             email: email,
-            avatar: currentProfileImageData // Base64 image or null
+            avatar: currentProfileImageData || AppState.currentUser.avatar // Use current upload or keep existing
         };
         
         const response = await api.updateProfile(profileData);
         
         if (response.success) {
-            // Update AppState
-            AppState.currentUser.name = name;
+            // Update AppState with all new values
+            AppState.currentUser.username = username;
+            AppState.currentUser.firstName = firstName;
+            AppState.currentUser.lastName = lastName;
+            AppState.currentUser.name = fullName;
             AppState.currentUser.email = email;
-            if (currentProfileImageData) {
-                AppState.currentUser.avatar = currentProfileImageData;
-            } else {
-                delete AppState.currentUser.avatar;
+            // Update avatar with the one sent (either new upload or existing)
+            if (profileData.avatar) {
+                AppState.currentUser.avatar = profileData.avatar;
+                // También actualizar en profile.avatar para compatibilidad
+                if (!AppState.currentUser.profile) {
+                    AppState.currentUser.profile = {};
+                }
+                AppState.currentUser.profile.avatar = profileData.avatar;
             }
             
             // Update UI
@@ -2011,29 +2135,81 @@ function setupEventListeners() {
         });
     }
 
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', async function(e) {
+    // Registration Step 1 form
+    const registerFormStep1 = document.getElementById('registerFormStep1');
+    if (registerFormStep1) {
+        registerFormStep1.addEventListener('submit', function(e) {
             e.preventDefault();
-            const name = document.getElementById('registerName').value.trim();
+            
+            const firstName = document.getElementById('registerFirstName').value.trim();
+            const lastName = document.getElementById('registerLastName').value.trim();
             const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value;
             const confirmPassword = document.getElementById('registerConfirmPassword').value;
             
-            if (!name || !email || !password || !confirmPassword) {
+            // Validations
+            if (!firstName || !lastName || !email || !password || !confirmPassword) {
                 api.showNotification('Por favor completa todos los campos', 'error');
                 return;
             }
-
+            
             if (password !== confirmPassword) {
                 api.showNotification('Las contraseñas no coinciden', 'error');
                 return;
             }
-
+            
+            if (password.length < 6) {
+                api.showNotification('La contraseña debe tener al menos 6 caracteres', 'error');
+                return;
+            }
+            
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                api.showNotification('El formato del email no es válido', 'error');
+                return;
+            }
+            
+            // Move to step 2
+            goToRegisterStep2();
+        });
+    }
+    
+    // Registration Step 2 form
+    const registerFormStep2 = document.getElementById('registerFormStep2');
+    if (registerFormStep2) {
+        registerFormStep2.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const firstName = document.getElementById('registerFirstName').value.trim();
+            const lastName = document.getElementById('registerLastName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            const username = document.getElementById('registerUsername').value.trim();
+            const selectedAvatar = document.getElementById('selectedAvatar').value;
+            
+            // Validations
+            if (!username) {
+                api.showNotification('Por favor ingresa un nombre de usuario', 'error');
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+                api.showNotification('El nombre de usuario debe tener 3-20 caracteres (solo letras, números y guión bajo)', 'error');
+                return;
+            }
+            
+            if (!selectedAvatar) {
+                api.showNotification('Por favor selecciona un avatar', 'error');
+                return;
+            }
+            
             showPageLoading('Creando cuenta...');
             
             try {
-                const response = await api.register(name, email, password, confirmPassword);
+                const fullName = `${firstName} ${lastName}`;
+                const response = await api.register(fullName, email, password, confirmPassword, username, selectedAvatar);
                 
                 if (response.success) {
                     AppState.currentUser = response.user;
@@ -2041,9 +2217,10 @@ function setupEventListeners() {
                     updateUserUI();
                     renderFilteredGames();
                     startSessionRefresh(); 
-                    addNotification(`¡Bienvenido a SNAPP, ${name}!`, 'Tu cuenta ha sido creada exitosamente.', 'success');
+                    addNotification(`¡Bienvenido a SNAPP, ${firstName}!`, 'Tu cuenta ha sido creada exitosamente.', 'success');
                     api.showNotification(response.message || '¡Cuenta creada!', 'success');
                     hideAuthModal();
+                    resetRegisterForm();
                 } else {
                     api.showNotification(response.error || 'Error al registrarse', 'error');
                 }
@@ -2053,6 +2230,94 @@ function setupEventListeners() {
                 hidePageLoading();
             }
         });
+    }
+    
+    // Back button to step 1
+    const backToStep1Btn = document.getElementById('backToStep1');
+    if (backToStep1Btn) {
+        backToStep1Btn.addEventListener('click', function() {
+            goToRegisterStep1();
+        });
+    }
+    
+    // Load avatars when opening register
+    function loadAvatarSelection() {
+        const avatarGrid = document.getElementById('avatarSelectionGrid');
+        if (!avatarGrid) return;
+        
+        const avatars = [
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&backgroundColor=c0aede',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=Midnight&backgroundColor=d1d4f9',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=Luna&backgroundColor=ffd5dc',
+            'https://api.dicebear.com/7.x/micah/svg?seed=Shadow&backgroundColor=ffdfbf',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=Pixel&backgroundColor=b6e3f4',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=Max&backgroundColor=c0aede',
+            'https://api.dicebear.com/7.x/micah/svg?seed=Nova&backgroundColor=d1d4f9',
+            'https://api.dicebear.com/7.x/bottts/svg?seed=Bolt&backgroundColor=ffd5dc',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=Sky&backgroundColor=ffdfbf'
+        ];
+        
+        avatarGrid.innerHTML = '';
+        avatars.forEach((avatarUrl, index) => {
+            const avatarOption = document.createElement('div');
+            avatarOption.className = 'avatar-option';
+            avatarOption.innerHTML = `<img src="${avatarUrl}" alt="Avatar ${index + 1}">`;
+            avatarOption.dataset.avatar = avatarUrl;
+            
+            avatarOption.addEventListener('click', function() {
+                document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('selectedAvatar').value = avatarUrl;
+            });
+            
+            avatarGrid.appendChild(avatarOption);
+        });
+    }
+    
+    // Functions to switch between steps
+    function goToRegisterStep2() {
+        const step1 = document.getElementById('registerFormStep1');
+        const step2 = document.getElementById('registerFormStep2');
+        
+        if (step1 && step2) {
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+            loadAvatarSelection();
+            
+            // Generate username suggestion
+            const firstName = document.getElementById('registerFirstName').value.trim().toLowerCase();
+            const lastName = document.getElementById('registerLastName').value.trim().toLowerCase();
+            const usernameSuggestion = `${firstName}${lastName}`.replace(/[^a-z0-9_]/g, '').substring(0, 20);
+            document.getElementById('registerUsername').value = usernameSuggestion;
+        }
+    }
+    
+    function goToRegisterStep1() {
+        const step1 = document.getElementById('registerFormStep1');
+        const step2 = document.getElementById('registerFormStep2');
+        
+        if (step1 && step2) {
+            step2.classList.add('hidden');
+            step1.classList.remove('hidden');
+        }
+    }
+    
+    function resetRegisterForm() {
+        // Reset step 1
+        document.getElementById('registerFirstName').value = '';
+        document.getElementById('registerLastName').value = '';
+        document.getElementById('registerEmail').value = '';
+        document.getElementById('registerPassword').value = '';
+        document.getElementById('registerConfirmPassword').value = '';
+        
+        // Reset step 2
+        document.getElementById('registerUsername').value = '';
+        document.getElementById('selectedAvatar').value = '';
+        document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
+        
+        // Go back to step 1
+        goToRegisterStep1();
     }
 
     const favoritesBtn = document.getElementById('favoritesBtn');
@@ -2301,21 +2566,24 @@ function setupEventListeners() {
         const userPanel = document.getElementById('userPanel');
         const createGameContainer = document.getElementById('createGameContainer');
         const changePasswordModal = document.getElementById('changePasswordModal');
+        const editProfileModal = document.getElementById('editProfileModal');
         const notificationsPanel = document.getElementById('notificationsPanel');
         const notificationsBtn = document.getElementById('notificationsBtn');
         
         if (authModal && e.target === authModal) hideAuthModal();
         if (userPanel && e.target === userPanel) hideUserPanel();
         if (createGameContainer && e.target === createGameContainer) {
+            saveCreateGameFormData(); // Guardar antes de cerrar
             createGameContainer.classList.remove('show');
             createGameContainer.classList.add('hidden');
             document.body.style.overflow = '';
         }
         if (changePasswordModal && e.target === changePasswordModal) hideChangePasswordModal();
+        if (editProfileModal && e.target === editProfileModal) hideEditProfileModal();
         
         if (notificationsPanel && e.target === notificationsPanel && 
             (!notificationsBtn || !notificationsBtn.contains(e.target))) {
-            notificationsPanel.classList.remove('show');
+            notificationsPanel.classList.remove('block');
             notificationsPanel.classList.add('hidden');
             document.body.style.overflow = '';
         }
@@ -2326,8 +2594,10 @@ function setupEventListeners() {
             hideAuthModal();
             hideUserPanel();
             hideChangePasswordModal();
+            hideEditProfileModal();
             const createGameContainer = document.getElementById('createGameContainer');
             if (createGameContainer && createGameContainer.classList.contains('show')) {
+                saveCreateGameFormData(); // Guardar antes de cerrar con ESC
                 createGameContainer.classList.remove('show');
                 createGameContainer.classList.add('hidden');
                 document.body.style.overflow = '';
@@ -2393,6 +2663,88 @@ function setupEventListeners() {
     });
 }
 
+// Funciones para guardar y restaurar el progreso del formulario de crear juego
+function saveCreateGameFormData() {
+    const formFields = [
+        'gameName', 'gameDescription', 'gameURL', 'gameCategory',
+        'creatorName', 'creatorEmail', 'termsAccepted', 'privacyAccepted'
+    ];
+    
+    const formData = {};
+    formFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            if (field.type === 'checkbox') {
+                formData[fieldId] = field.checked;
+            } else {
+                formData[fieldId] = field.value;
+            }
+        }
+    });
+    
+    // Guardar imagen preview si existe
+    const imagePreview = document.getElementById('imagePreview');
+    if (imagePreview && imagePreview.src && !imagePreview.src.includes('placeholder')) {
+        formData.imagePreviewSrc = imagePreview.src;
+    }
+    
+    // Guardar en AppState
+    AppState.createGameFormData = formData;
+}
+
+function restoreCreateGameFormData() {
+    if (!AppState.createGameFormData || Object.keys(AppState.createGameFormData).length === 0) {
+        return; // No hay datos guardados
+    }
+    
+    const formData = AppState.createGameFormData;
+    
+    // Restaurar cada campo
+    Object.keys(formData).forEach(fieldId => {
+        if (fieldId === 'imagePreviewSrc') {
+            const imagePreview = document.getElementById('imagePreview');
+            if (imagePreview) {
+                imagePreview.src = formData[fieldId];
+                imagePreview.classList.remove('hidden');
+            }
+            return;
+        }
+        
+        const field = document.getElementById(fieldId);
+        if (field) {
+            if (field.type === 'checkbox') {
+                field.checked = formData[fieldId];
+            } else {
+                field.value = formData[fieldId];
+            }
+        }
+    });
+    
+    // Restaurar categoría seleccionada visualmente
+    if (formData.gameCategory) {
+        const categoryOptions = document.querySelectorAll('.category-option');
+        categoryOptions.forEach(option => {
+            if (option.getAttribute('data-value') === formData.gameCategory) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
+    }
+    
+}
+
+function clearCreateGameFormData() {
+    AppState.createGameFormData = {};
+    const gameForm = document.getElementById('gameForm');
+    if (gameForm) gameForm.reset();
+    const imagePreview = document.getElementById('imagePreview');
+    if (imagePreview) {
+        imagePreview.src = '';
+        imagePreview.classList.add('hidden');
+    }
+}
+
 function setupGameForm() {
     const createGameBtn = document.getElementById('createGameBtn');
     const createGameContainer = document.getElementById('createGameContainer');
@@ -2409,6 +2761,7 @@ function setupGameForm() {
 
     if (createGameBtn) {
         createGameBtn.addEventListener('click', function() {
+            closeAllModals(); // Cerrar otros modales
             if (!AppState.currentUser) {
                 api.showNotification('Debes iniciar sesión para crear juegos', 'error');
                 showAuthModal('login');
@@ -2418,21 +2771,34 @@ function setupGameForm() {
             createGameContainer.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             
+            // Hacer scroll al inicio del formulario (Información Básica)
+            // El elemento que tiene el scroll es create-game-form, no el container
+            setTimeout(() => {
+                const formElement = createGameContainer.querySelector('.create-game-form');
+                if (formElement) {
+                    formElement.scrollTop = 0;
+                }
+                // También resetear el container por si acaso
+                createGameContainer.scrollTop = 0;
+            }, 100);
+            
+            // Restaurar datos guardados si existen
+            restoreCreateGameFormData();
+            
             if (AppState.currentUser) {
                 const creatorName = document.getElementById('creatorName');
                 const creatorEmail = document.getElementById('creatorEmail');
-                if (creatorName) creatorName.value = AppState.currentUser.name;
-                if (creatorEmail) creatorEmail.value = AppState.currentUser.email;
+                if (creatorName && !creatorName.value) creatorName.value = AppState.currentUser.name;
+                if (creatorEmail && !creatorEmail.value) creatorEmail.value = AppState.currentUser.email;
             }
         });
     }
 
     function closeGameForm() {
+        saveCreateGameFormData(); // Guardar antes de cerrar
         createGameContainer.classList.remove('show');
         createGameContainer.classList.add('hidden');
         document.body.style.overflow = '';
-        if (gameForm) gameForm.reset();
-        resetForm();
     }
 
     if (cancelCreateGameBtn) {
@@ -2501,6 +2867,7 @@ function setupGameForm() {
                 
                 if (response.success) {
                     api.showNotification(response.message || '¡Juego enviado con éxito! Te contactaremos pronto.', 'success');
+                    clearCreateGameFormData(); // Limpiar datos guardados después de envío exitoso
                     closeGameForm();
                     addNotification('Juego enviado para revisión', 'Tu juego será revisado por nuestro equipo.', 'success');
                     await loadAllGames();
