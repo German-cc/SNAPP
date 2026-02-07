@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sudoku</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1e3a8a;
+  --bg: #f1f5f9;
+  --tile-bg: #ffffff;
+  --border: #cbd5e1;
+  --highlight: #dbeafe;
+  --error: #fecaca;
+  --empty: #fff7cc;
+  --success: #bbf7d0;
+  --text: #0f172a;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(135deg, #dbeafe, #e0f2fe);
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+h1 {
+  color: var(--primary-dark);
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+}
+
+p {
+  color: #475569;
+  margin-bottom: 10px;
+}
+
+.timer {
+  font-size: 1.3rem;
+  color: var(--primary-dark);
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+#message {
+  margin-bottom: 15px;
+  min-height: 24px;
+  font-weight: 600;
+  color: var(--primary-dark);
+  font-size: 1.1rem;
+  text-align: center;
+  user-select: none;
+}
+
+.sudoku-container {
+  background: var(--tile-bg);
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow-x: auto; /* Agregado para pantallas pequeñas */
+}
+
+table {
+  border-collapse: collapse;
+  margin: 0 auto;
+}
+
+td {
+  width: 55px;
+  height: 55px;
+  border: 1px solid var(--border);
+}
+
+td:nth-child(3n) {
+  border-right: 2px solid var(--primary-dark);
+}
+tr:nth-child(3n) td {
+  border-bottom: 2px solid var(--primary-dark);
+}
+
+input {
+  width: 53px;
+  height: 53px;
+  text-align: center;
+  border: none;
+  outline: none;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  background-color: transparent;
+  transition: background 0.2s ease;
+}
+
+input:hover:not(:disabled) {
+  background-color: var(--highlight);
+  cursor: pointer;
+}
+
+input.prefilled {
+  color: var(--primary-dark);
+  font-weight: 700;
+  background-color: #eef2ff;
+  cursor: default;
+}
+
+input.error {
+  background-color: var(--error);
+}
+
+input.empty {
+  background-color: var(--empty);
+}
+
+input.success {
+  background-color: var(--success);
+}
+
+.btn-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 25px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: #e2e8f0;
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+footer {
+  margin-top: 25px;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  td {
+    width: 38px;
+    height: 38px;
+  }
+
+  input {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  .btn {
+    font-size: 15px;
+    padding: 10px 20px;
+  }
+
+  .timer {
+    font-size: 1.1rem;
+  }
+
+  .sudoku-container {
+    padding: 15px;
+  }
+}
+@media (max-width: 432px) {
+  td {
+    width: 30px;
+    height: 30px;
+  }
+
+  input {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .btn {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+
+  .timer {
+    font-size: 1rem;
+  }
+
+  .sudoku-container {
+    padding: 10px;
+  }
+}
+@media (max-width: 368px) {
+  td {
+    width: 26px;
+    height: 26px;
+  }
+
+  input {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  .btn {
+    font-size: 13px;
+    padding: 6px 12px;
+  }
+
+  .timer {
+    font-size: 0.95rem;
+  }
+
+  .sudoku-container {
+    padding: 8px;
+  }
+}
+
+</style>
+</head>
+<body>
+<h1>Sudoku🧩</h1>
+<div class="timer" id="timer">Tiempo: 00:00</div>
+<div id="message"></div>
+<div class="sudoku-container">
+  <table id="sudoku-board"></table>
+</div>
+<div class="btn-container">
+  <button class="btn btn-primary" onclick="checkSolution()">Comprobar</button>
+  <button class="btn btn-secondary" onclick="generatePuzzle()">Nuevo Sudoku</button>
+  <button class="btn btn-secondary" onclick="clearBoard()">Limpiar</button>
+</div>
+<script>
+  const table = document.getElementById("sudoku-board");
+  const timerDisplay = document.getElementById("timer");
+  const messageDisplay = document.getElementById("message");
+  let timer;
+  let secondsElapsed = 0;
+  let gameFinished = false;
+  let timerStarted = false;
+  for (let i = 0; i < 9; i++) {
+    const row = document.createElement("tr");
+    for (let j = 0; j < 9; j++) {
+      const cell = document.createElement("td");
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = 1;
+      input.max = 9;
+      input.id = `cell-${i}-${j}`;
+      input.autocomplete = "off";
+      input.addEventListener('input', onInputChange);
+      cell.appendChild(input);
+      row.appendChild(cell);
+    }
+    table.appendChild(row);
+  }
+  function onInputChange(e) {
+    if (gameFinished) return;
+    
+    const input = e.target;
+    let val = input.value;
+    if (!timerStarted && /^[1-9]$/.test(val)) {
+      timerStarted = true;
+      startTimer();
+    }
+    if (val === "" || /^[1-9]$/.test(val)) {
+    } else {
+      input.value = "";
+      return;
+    }
+    validateAndMarkErrors();
+    clearMessage();
+  }
+  function isSafe(board, row, col, num) {
+    for (let i = 0; i < 9; i++) {
+      if (i !== col && board[row][i] === num) return false;
+      if (i !== row && board[i][col] === num) return false;
+    }
+    let boxRowStart = row - (row % 3);
+    let boxColStart = col - (col % 3);
+    for (let r = boxRowStart; r < boxRowStart + 3; r++) {
+      for (let c = boxColStart; c < boxColStart + 3; c++) {
+        if ((r !== row || c !== col) && board[r][c] === num) return false;
+      }
+    }
+    return true;
+  }
+  function createEmptyBoard() {
+    return Array(9).fill(0).map(() => Array(9).fill(0));
+  }
+  function solve(board) {
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        if (board[row][col] === 0) {
+          let numbers = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+          for (let num of numbers) {
+            if (isSafe(board, row, col, num)) {
+              board[row][col] = num;
+              if (solve(board)) return true;
+              board[row][col] = 0;
+            }
+          }
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+  function hideCells(board, emptyCells = 45) {
+    let puzzle = board.map(row => row.slice());
+    let count = 0;
+    while (count < emptyCells) {
+      let r = Math.floor(Math.random() * 9);
+      let c = Math.floor(Math.random() * 9);
+      if (puzzle[r][c] !== 0) {
+        puzzle[r][c] = 0;
+        count++;
+      }
+    }
+    return puzzle;
+  }
+  function generatePuzzle() {
+    gameFinished = false;
+    stopTimer();
+    secondsElapsed = 0;
+    timerStarted = false;
+    updateTimer();
+    clearMessage();
+    let board = createEmptyBoard();
+    solve(board);
+    let puzzle = hideCells(board, 45);
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        const cell = document.getElementById(`cell-${i}-${j}`);
+        cell.classList.remove("error", "success", "prefilled", "empty");
+        if (puzzle[i][j] !== 0) {
+          cell.value = puzzle[i][j];
+          cell.disabled = true;
+          cell.classList.add("prefilled");
+        } else {
+          cell.value = "";
+          cell.disabled = false;
+        }
+      }
+    }
+  }
+  function clearBoard() {
+    if (gameFinished) return;
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        const cell = document.getElementById(`cell-${i}-${j}`);
+        if (!cell.disabled) {
+          cell.value = "";
+          cell.classList.remove("error", "empty");
+        }
+      }
+    }
+    clearMessage();
+  }
+  function validateAndMarkErrors() {
+    let board = createEmptyBoard();
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        const val = parseInt(document.getElementById(`cell-${i}-${j}`).value);
+        board[i][j] = (val >= 1 && val <= 9) ? val : 0;
+      }
+    }
+    let errorFound = false;
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        const cell = document.getElementById(`cell-${i}-${j}`);
+        cell.classList.remove("error", "empty", "success");
+      }
+    }
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        const val = board[i][j];
+        const cell = document.getElementById(`cell-${i}-${j}`);
+
+        if (val === 0 && !cell.disabled) {
+          cell.classList.add("empty");
+          errorFound = true;
+        } else if (val !== 0 && !isSafe(board, i, j, val)) {
+          if (!cell.disabled) cell.classList.add("error");
+          errorFound = true;
+        }
+      }
+    }
+    return !errorFound;
+  }
+  function checkSolution() {
+    if (gameFinished) return;
+    let valid = validateAndMarkErrors();
+    if (!valid) {
+      showMessage("❌ Hay errores o casillas vacías. Revisa las casillas marcadas.", "error");
+      return;
+    }
+    gameFinished = true;
+    stopTimer();
+    showMessage("🎉 ¡Felicidades! Sudoku válido y completado.", "success");
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        const cell = document.getElementById(`cell-${i}-${j}`);
+        cell.disabled = true;
+        cell.classList.remove("error", "empty");
+        cell.classList.add("success");
+      }
+    }
+  }
+  function showMessage(text, type = "info") {
+    messageDisplay.textContent = text;
+    if (type === "error") {
+      messageDisplay.style.color = "#b91c1c";
+    } else if (type === "success") {
+      messageDisplay.style.color = "#166534";
+    } else {
+      messageDisplay.style.color = "var(--primary-dark)";
+    }
+  }
+  function clearMessage() {
+    messageDisplay.textContent = "";
+  }
+  function startTimer() {
+    stopTimer();
+    timer = setInterval(() => {
+      secondsElapsed++;
+      updateTimer();
+    }, 1000);
+  }
+  function stopTimer() {
+    clearInterval(timer);
+  }
+  function updateTimer() {
+    let m = Math.floor(secondsElapsed / 60);
+    let s = secondsElapsed % 60;
+    timerDisplay.textContent = `Tiempo: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  generatePuzzle();
+</script></body></html>

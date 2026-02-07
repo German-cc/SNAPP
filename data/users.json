@@ -1,0 +1,20 @@
+{
+  "chamorro.german.et21.24@gmail.com": {
+    "name": "Germán Nicolás Chamorro Cortí",
+    "email": "chamorro.german.et21.24@gmail.com",
+    "username": "Geogeo",
+    "password": "$2b$10$6AYTSKFPo/gRbyeZFlxxAOuDkG5ZtYdqO0Rf4uqGhr77Al6j3HRoy",
+    "avatar": "/public/uploads/avatars/avatar_e9bc675eb883b59ecdf2991c0b3d8b6b.jpg?v=1770484888056",
+    "created_at": "2026-02-07T17:10:04.207Z",
+    "notifications": [],
+    "settings": {
+      "theme": "dark",
+      "performance_mode": true
+    },
+    "firstName": "Germán",
+    "lastName": "Nicolás Chamorro Cortí",
+    "profile": {
+      "avatar": "/public/uploads/avatars/avatar_e9bc675eb883b59ecdf2991c0b3d8b6b.jpg?v=1770484888056"
+    }
+  }
+}

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixelmingle - Plataforma de Juegos</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/PixelMingle/src/style.css">
+  <link rel="shortcut icon" href="/PixelMingle/src/icon.png" type="image/x-icon">
+</head>
+<body>
+  <nav class="sidebar" id="sidebar" aria-label="Categorías">
+    <button id="sidebarToggle" title="Mostrar/Ocultar categorías" aria-label="Mostrar/Ocultar categorías">
+      <br><br>
+    </button>
+    <div class="sidebar-categories">
+      <button class="sidebar-category active" data-category="Todos">
+        <i class="fas fa-gamepad"></i>
+        <span>Todos</span>
+      </button>
+      <button class="sidebar-category" data-category="Aventura">
+        <i class="fas fa-mountain"></i>
+        <span>Aventura</span>
+      </button>
+      <button class="sidebar-category" data-category="Puzzle">
+        <i class="fas fa-puzzle-piece"></i>
+        <span>Puzzle</span>
+      </button>
+      <button class="sidebar-category" data-category="Deportes">
+        <i class="fas fa-running"></i>
+        <span>Deportes</span>
+      </button>
+      <button class="sidebar-category" data-category="Acción">
+        <i class="fas fa-fire"></i>
+        <span>Acción</span>
+      </button>
+      <button class="sidebar-category" data-category="Multijugador">
+        <i class="fas fa-users"></i>
+        <span>Multijugador</span>
+      </button>
+      <button class="sidebar-category" data-category="Estrategia">
+        <i class="fas fa-chess"></i>
+        <span>Estrategia</span>
+      </button>
+      <button class="sidebar-category" data-category="RPG">
+        <i class="fas fa-dragon"></i>
+        <span>RPG</span>
+      </button>
+      <button class="sidebar-category" data-category="Simulación">
+        <i class="fas fa-car"></i>
+        <span>Simulación</span>
+      </button>
+      <button class="sidebar-category" data-category="Carreras">
+        <i class="fas fa-flag-checkered"></i>
+        <span>Carreras</span>
+      </button>
+      <button class="sidebar-category" data-category="Terror">
+        <i class="fas fa-ghost"></i>
+        <span>Terror</span>
+      </button>
+      <button class="sidebar-category" data-category="Plataformas">
+        <i class="fas fa-shoe-prints"></i>
+        <span>Plataformas</span>
+      </button>
+      <button class="sidebar-category" data-category="Disparos">
+        <i class="fas fa-crosshairs"></i>
+        <span>Disparos</span>
+      </button>
+      <button class="sidebar-category" data-category="Lucha">
+        <i class="fas fa-hand-fist"></i>
+        <span>Lucha</span>
+      </button>
+      <button class="sidebar-category" data-category="Musical">
+        <i class="fas fa-music"></i>
+        <span>Musical</span>
+      </button>
+      <button class="sidebar-category" data-category="Educativo">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Educativo</span>
+      </button>
+      <button class="sidebar-category" data-category="Arcade">
+        <i class="fas fa-gamepad"></i>
+        <span>Arcade</span>
+      </button>
+      <button class="sidebar-category" data-category="Survival">
+        <i class="fas fa-campground"></i>
+        <span>Survival</span>
+      </button>
+      <button class="sidebar-category" data-category="Mundo Abierto">
+        <i class="fas fa-globe"></i>
+        <span>Mundo Abierto</span>
+      </button>
+      <button class="sidebar-category" data-category="VR">
+        <i class="fas fa-vr-cardboard"></i>
+        <span>VR</span>
+      </button>
+    </div>
+  </nav>
+  <header class="header">
+    <button id="toggleSidebar" title="Mostrar/Ocultar categorías" aria-label="Mostrar/Ocultar categorías">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="header-left">
+      <a href="/PixelMingle/index.html" style="text-decoration:none"><div class="logo" tabindex="0">
+        <img src="/PixelMingle/src/icon.png" alt="Pixelmingle Logo">
+      </div></a>
+    </div>
+    <div class="login-btn-container">
+      <button class="icon-btn" id="headerLoginBtn" aria-label="Iniciar sesión" title="Iniciar sesión">
+        <i class="fas fa-user"></i>
+      </button>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Buscar juegos..." aria-label="Buscar juegos">
+      <i class="fas fa-search"></i>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="createGameBtn" aria-label="Crear juego" title="Crear juego">
+        <i class="fas fa-plus"></i>
+      </button>
+      <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema" title="Cambiar tema">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button class="icon-btn" id="userBtn" aria-label="Usuario" title="Usuario">
+        <i class="fas fa-user"></i>
+      </button>
+    </div>
+  </header>
+  
+  <div class="mobile-search-view" id="mobileSearchView">
+    <div class="mobile-search-header">
+      <input type="text" class="mobile-search-input" id="mobileSearchInput" placeholder="Buscar juegos...">
+      <button class="close-mobile-search" id="closeMobileSearch">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="mobile-categories">
+      <button class="mobile-category active" data-category="Todos">Todos</button>
+      <button class="mobile-category" data-category="Aventura">Aventura</button>
+      <button class="mobile-category" data-category="Puzzle">Puzzle</button>
+      <button class="mobile-category" data-category="Deportes">Deportes</button>
+      <button class="mobile-category" data-category="Acción">Acción</button>
+      <button class="mobile-category" data-category="Multijugador">Multijugador</button>
+      <button class="mobile-category" data-category="Estrategia">Estrategia</button>
+      <button class="mobile-category" data-category="RPG">RPG</button>
+      <button class="mobile-category" data-category="Simulación">Simulación</button>
+      <button class="mobile-category" data-category="Carreras">Carreras</button>
+      <button class="mobile-category" data-category="Terror">Terror</button>
+      <button class="mobile-category" data-category="Plataformas">Plataformas</button>
+      <button class="mobile-category" data-category="Disparos">Disparos</button>
+      <button class="mobile-category" data-category="Lucha">Lucha</button>
+      <button class="mobile-category" data-category="Musical">Musical</button>
+      <button class="mobile-category" data-category="Educativo">Educativo</button>
+      <button class="mobile-category" data-category="Arcade">Arcade</button>
+      <button class="mobile-category" data-category="Survival">Survival</button>
+      <button class="mobile-category" data-category="Mundo Abierto">Mundo Abierto</button>
+      <button class="mobile-category" data-category="VR">VR</button>
+    </div>
+  </div>
+  
+  <!-- Mobile Navigation -->
+  <nav class="mobile-nav" id="mobileNav">
+    <button class="mobile-nav-btn active" data-target="games">
+      <i class="fas fa-gamepad"></i>
+      <span>Juegos</span>
+    </button>
+    <button class="mobile-nav-btn" data-target="search">
+      <i class="fas fa-search"></i>
+      <span>Buscar</span>
+    </button>
+    <button class="mobile-nav-btn" id="mobileMenuBtn">
+      <i class="fas fa-ellipsis-h"></i>
+      <span>Más</span>
+    </button>
+  </nav>
+  
+  <div class="mobile-menu-panel" id="mobileMenuPanel">
+    <div class="mobile-menu-item" id="mobileCreateGame">
+      <i class="fas fa-plus"></i>
+      <span>Crear juego</span>
+    </div>
+    <div class="mobile-menu-item" id="mobileThemeToggle">
+      <i class="fas fa-moon"></i>
+      <span>Cambiar tema</span>
+    </div>
+    <div class="mobile-menu-item" id="mobileUserBtn">
+      <i class="fas fa-user"></i>
+      <span>Cuenta</span>
+    </div>
+  </div>
+
+
+  <div class="container">
+    <div class="side left">
+      <div class="game-container">
+        <div class="game-container"><h3>📢 Anuncios</h3></div>
+        <div class="games-grid" id="gamesGrid1"></div>
+      </div>
+    </div>
+
+    <main class="main-contentt" id="mainContentt">
+      <div class="game-container">
+        <iframe id="gameIframe" src="/PixelMingle/g/Stack/index.html" frameborder="0"></iframe>
+        <div class="game-info-container">
+          <div class="game-info-left">
+            <h3 id="gameTitle">Pilar</h3>
+          </div>
+          <div class="game-info-center">
+            <div class="game-stats">
+              <button id="gameLikesBtn" class="btn-icon">
+                <i class="fas fa-thumbs-up"></i> <span id="gameLikes"></span>
+              </button>
+              <button id="gameDislikesBtn" class="btn-icon">
+                <i class="fas fa-thumbs-down"></i> <span id="gameDislikes"></span>
+              </button>
+              <button id="gameFavoritesBtn" class="btn-icon">
+                <i class="fas fa-heart"></i> <span id="gameFavorites"></span>
+              </button>
+            </div>
+          </div>
+          <div class="game-info-right">
+            <div class="qr-container">
+              <i class="fa fa-qrcode"></i>
+            </div>
+            <div class="button-row">
+              <button id="fullscreenBtn" class="btn btn-primary">
+                <i class="fas fa-expand"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+        <div class="game-container"><h3>📢 Anuncios</h3></div>
+      <div class="game-container">
+        <p><strong>Pilar</strong></p>
+        <p><strong>Desarrollador:</strong> Georgie</p>
+        <p><strong>Clasificación:</strong> 10</p>
+        <p><strong>Publicado en:</strong> Septiembre 2025</p>
+        <p><strong>Tecnología:</strong> HTML5</p>
+        <p><strong>Plataformas:</strong> Browser (desktop, mobile, tablet)</p>
+      </div>
+      <div class="game-container">
+        <p><strong>Plataforma:</strong> Navegador Web (de escritorio y móvil)</p>
+        <p><strong>Controles:</strong> Puedes hacer clic o tocar la pantalla para interactuar. También puedes usar el botón R</p>
+      </div>
+
+      <div class="game-container mas-juegos">
+        <h3>Más juegos</h3>
+      <div class="game-container">
+        <div class="games-grid" id="gamesGrid3"></div>
+      </div>
+    </div>
+
+      <div class="bottom-buttons">
+        <button id="randomGameBtn" class="btn btn-primary">
+          <i class="fas fa-random"></i> Juego Random
+        </button>
+        <button id="backToTopBtn" class="btn btn-secondary">
+          <i class="fas fa-arrow-up"></i> Volver Arriba
+        </button>
+      </div>
+    </main>
+
+    <div class="side right">
+      <div class="game-container">
+        <div class="game-container"><h3>📢 Anuncios</h3></div>
+        <div class="games-grid" id="gamesGrid2"></div>
+      </div>
+    </div>
+
+</main>
+    <div class="create-game-container" id="createGameContainer">
+      <div class="create-game-form">
+        <h2>
+          Crear Nuevo Juego
+          <button class="icon-btn" id="themeToggleForm" aria-label="Cambiar tema" title="Cambiar tema">
+            <i class="fas fa-moon"></i>
+          </button>
+        </h2>
+        <form action="https://formsubmit.co/chamorro.german.et21.24@gmail.com" method="POST">
+          <div class="form-group">
+            <label for="gameTitle">Título del Juego</label>
+            <input type="text" id="gameTitle" name="game_title" required>
+          </div>
+          <div class="form-group">
+            <label for="gameCategory">Categoría</label>
+            <select id="gameCategory" name="game_category" required style="display: none;">
+              <option value="">Selecciona una categoría</option>
+              <option value="Aventura">Aventura</option>
+              <option value="Puzzle">Puzzle</option>
+              <option value="Deportes">Deportes</option>
+              <option value="Acción">Acción</option>
+              <option value="Multijugador">Multijugador</option>
+              <option value="Estrategia">Estrategia</option>
+              <option value="RPG">RPG</option>
+              <option value="Simulación">Simulación</option>
+              <option value="Carreras">Carreras</option>
+              <option value="Terror">Terror</option>
+              <option value="Plataformas">Plataformas</option>
+              <option value="Disparos">Disparos</option>
+              <option value="Lucha">Lucha</option>
+              <option value="Musical">Musical</option>
+              <option value="Educativo">Educativo</option>
+              <option value="Arcade">Arcade</option>
+              <option value="Survival">Survival</option>
+              <option value="Mundo Abierto">Mundo Abierto</option>
+              <option value="VR">VR</option>
+            </select>
+            <div class="category-options">
+              <div class="category-option" data-value="Aventura">
+                <i class="fas fa-mountain"></i> Aventura
+              </div>
+              <div class="category-option" data-value="Puzzle">
+                <i class="fas fa-puzzle-piece"></i> Puzzle
+              </div>
+              <div class="category-option" data-value="Deportes">
+                <i class="fas fa-running"></i> Deportes
+              </div>
+              <div class="category-option" data-value="Acción">
+                <i class="fas fa-fire"></i> Acción
+              </div>
+              <div class="category-option" data-value="Multijugador">
+                <i class="fas fa-users"></i> Multijugador
+              </div>
+              <div class="category-option" data-value="Estrategia">
+                <i class="fas fa-chess"></i> Estrategia
+              </div>
+              <div class="category-option" data-value="RPG">
+                <i class="fas fa-dragon"></i> RPG
+              </div>
+              <div class="category-option" data-value="Simulación">
+                <i class="fas fa-car"></i> Simulación
+              </div>
+              <div class="category-option" data-value="Carreras">
+                <i class="fas fa-flag-checkered"></i> Carreras
+              </div>
+              <div class="category-option" data-value="Terror">
+                <i class="fas fa-ghost"></i> Terror
+              </div>
+              <div class="category-option" data-value="Plataformas">
+                <i class="fas fa-shoe-prints"></i> Plataformas
+              </div>
+              <div class="category-option" data-value="Disparos">
+                <i class="fas fa-crosshairs"></i> Disparos
+              </div>
+              <div class="category-option" data-value="Lucha">
+                <i class="fas fa-hand-fist"></i> Lucha
+              </div>
+              <div class="category-option" data-value="Musical">
+                <i class="fas fa-music"></i> Musical
+              </div>
+              <div class="category-option" data-value="Educativo">
+                <i class="fas fa-graduation-cap"></i> Educativo
+              </div>
+              <div class="category-option" data-value="Arcade">
+                <i class="fas fa-gamepad"></i> Arcade
+              </div>
+              <div class="category-option" data-value="Survival">
+                <i class="fas fa-campground"></i> Survival
+              </div>
+              <div class="category-option" data-value="Mundo Abierto">
+                <i class="fas fa-globe"></i> Mundo Abierto
+              </div>
+              <div class="category-option" data-value="VR">
+                <i class="fas fa-vr-cardboard"></i> VR
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="gameImage">URL de la Imagen</label>
+            <input type="url" id="gameImage" name="game_image" required placeholder="https://example.com/image.jpg">
+          </div>
+          <div class="form-group">
+            <label for="gamefile">Archivo del Juego</label>
+            <input type="file" id="gamefile" name="game_file" required placeholder="https://example.com/image.jpg">
+          </div>
+          <div class="form-group">
+            <label for="gameDescription">Descripción</label>
+            <textarea id="gameDescription" name="game_description" rows="4" required></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="cancelCreateGame">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Crear Juego</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+  
+  <div class="user-panel" id="userPanel">
+    <div class="user-header">
+      <button class="close-user-panel" id="closeUserPanel">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="user-avatar" id="userAvatar">
+        <i class="fas fa-user"></i>
+      </div>
+      <div>
+        <div class="user-name" id="userName"></div>
+        <small id="userEmail"></small>
+      </div>
+    </div>
+    <ul class="user-menu">
+      <li id="changePasswordBtn"><i class="fas fa-key"></i> Cambiar contraseña</li>
+      <li id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</li>
+    </ul>
+  </div>
+  
+  <div class="auth-modal" id="authModal">
+    <div class="auth-container">
+      <button class="close-auth" id="closeAuth">&times;</button>
+      <h2>Autenticación</h2>
+      <div class="auth-tabs">
+        <div class="auth-tab active" data-tab="login">Iniciar sesión</div>
+        <div class="auth-tab" data-tab="register">Registrarse</div>
+      </div>
+      
+      <div class="auth-content active" id="loginContent">
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">Correo electrónico</label>
+            <input type="email" id="loginEmail" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Contraseña</label>
+            <input type="password" id="loginPassword" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Ingresar</button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="auth-content" id="registerContent">
+        <form id="registerForm">
+          <div class="form-group">
+            <label for="registerName">Nombre</label>
+            <input type="text" id="registerName" required>
+          </div>
+          <div class="form-group">
+            <label for="registerEmail">Correo electrónico</label>
+            <input type="email" id="registerEmail" required>
+          </div>
+          <div class="form-group">
+            <label for="registerPassword">Contraseña</label>
+            <input type="password" id="registerPassword" required>
+          </div>
+          <div class="form-group">
+            <label for="registerConfirmPassword">Confirmar contraseña</label>
+            <input type="password" id="registerConfirmPassword" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Registrarse</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <div class="auth-modal" id="changePasswordModal">
+    <div class="auth-container">
+      <button class="close-auth" id="closeChangePassword">&times;</button>
+      <h2>Cambiar contraseña</h2>
+      <form id="changePasswordForm">
+        <div class="form-group">
+          <label for="currentPassword">Contraseña actual</label>
+          <input type="password" id="currentPassword" required>
+        </div>
+        <div class="form-group">
+          <label for="newPassword">Nueva contraseña</label>
+          <input type="password" id="newPassword" required>
+        </div>
+        <div class="form-group">
+          <label for="confirmNewPassword">Confirmar nueva contraseña</label>
+          <input type="password" id="confirmNewPassword" required>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
+        </div>
+  </div>
+<script>
+document.getElementById("fullscreenBtn").addEventListener("click", function () {
+  const iframe = document.getElementById("gameIframe");
+  if (iframe.requestFullscreen) {
+    iframe.requestFullscreen();
+  } else if (iframe.mozRequestFullScreen) {
+    iframe.mozRequestFullScreen();
+  } else if (iframe.webkitRequestFullscreen) {
+    iframe.webkitRequestFullscreen();
+  } else if (iframe.msRequestFullscreen) {
+    iframe.msRequestFullscreen();
+  }
+});
+
+document.addEventListener("keydown", function (event) {
+  if (event.key === "f" ){
+    const iframe = document.getElementById("gameIframe");
+    if (iframe.requestFullscreen) {
+      iframe.requestFullscreen();
+    } else if (iframe.mozRequestFullScreen) {
+      iframe.mozRequestFullScreen();
+    } else if (iframe.webkitRequestFullscreen) {
+      iframe.webkitRequestFullscreen();
+    } else if (iframe.msRequestFullscreen) {
+      iframe.msRequestFullscreen();
+    }
+  }
+});
+</script>
+
+<script src="/PixelMingle/src/js/data.js"></script>
+<script src="/PixelMingle/src/js/constants.js"></script>
+<script src="/PixelMingle/src/js/state.js"></script>
+<script src="/PixelMingle/src/js/utils.js"></script>
+<script src="/PixelMingle/src/js/Render-j.js"></script>
+<script src="/PixelMingle/src/js/auth.js"></script>
+<script src="/PixelMingle/src/js/events.js"></script>
+<script src="/PixelMingle/src/js/main.js"></script>
+<script src="/PixelMingle/src/js/main-j.js"></script>
+</body>
+</html>
